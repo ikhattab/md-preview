@@ -68,6 +68,8 @@
     <script src="app.js" defer></script>
   </head>
   <body>
+    <!-- Accessibility: skip link to jump to main content -->
+    <a class="skip-link" href="#mainContent">Skip to main content</a>
     <div class="app">
       <header class="header">
         <div class="logo-container">
@@ -80,6 +82,8 @@
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
           >
             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
             <polyline points="14 2 14 8 20 8" />
@@ -90,9 +94,9 @@
           <h1 class="logo">mdfor.work</h1>
         </div>
 
-        <div class="header-controls">
-          <div class="mobile-view-switcher" id="mobileViewSwitcher">
-            <button class="view-tab active" data-view="editor" aria-label="Show editor">
+        <div class="header-controls" role="group" aria-label="Editor controls">
+          <nav class="mobile-view-switcher" id="mobileViewSwitcher" aria-label="Toggle view">
+            <button class="view-tab active" data-view="editor" aria-pressed="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -103,12 +107,14 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
               >
                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
               </svg>
               <span class="view-tab-label">Editor</span>
             </button>
-            <button class="view-tab" data-view="preview" aria-label="Show preview">
+            <button class="view-tab" data-view="preview" aria-pressed="false">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
@@ -119,18 +125,21 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
               >
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
               <span class="view-tab-label">Preview</span>
             </button>
-          </div>
+          </nav>
           <button
             class="scroll-sync-toggle active"
             id="scrollSyncToggle"
             aria-label="Toggle scroll sync"
             title="Sync scrolling"
+            aria-pressed="true"
           >
             <!-- Link icon (synced) -->
             <svg
@@ -144,6 +153,8 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -160,6 +171,8 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path
                 d="M18.84 12.25l1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"
@@ -186,6 +199,8 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -209,6 +224,8 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
@@ -216,10 +233,10 @@
         </div>
       </header>
 
-      <main class="editor-container">
-        <section class="pane editor-pane" id="editorPane">
-          <div class="pane-header">
-            <span class="pane-title">Markdown</span>
+      <main class="editor-container" id="mainContent">
+        <section class="pane editor-pane" id="editorPane" aria-labelledby="editorHeading">
+          <header class="pane-header">
+            <h2 class="pane-title" id="editorHeading">Markdown</h2>
             <button class="collapse-btn" id="collapseEditor" aria-label="Collapse editor">
               <svg
                 class="collapse-icon"
@@ -232,29 +249,50 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
               >
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
+          </header>
+          <div class="field">
+            <label class="sr-only" for="editor">Markdown input</label>
+            <p class="sr-only" id="editorDescription">
+              Type markdown to see a live preview alongside.
+            </p>
+            <textarea
+              id="editor"
+              class="editor"
+              placeholder="Start writing..."
+              spellcheck="true"
+              aria-describedby="editorDescription"
+              autofocus
+            ></textarea>
           </div>
-          <textarea
-            id="editor"
-            class="editor"
-            placeholder="Start writing..."
-            spellcheck="true"
-            autofocus
-          ></textarea>
         </section>
 
-        <div class="resize-handle" id="resizeHandle">
-          <div class="resize-line"></div>
+        <div
+          class="resize-handle"
+          id="resizeHandle"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize editor and preview panes"
+          tabindex="0"
+        >
+          <div class="resize-line" aria-hidden="true"></div>
         </div>
 
-        <section class="pane preview-pane" id="previewPane">
-          <div class="pane-header">
-            <span class="pane-title">Preview</span>
-          </div>
-          <article id="preview" class="preview prose"></article>
+        <section class="pane preview-pane" id="previewPane" aria-labelledby="previewHeading">
+          <header class="pane-header">
+            <h2 class="pane-title" id="previewHeading">Preview</h2>
+          </header>
+          <article
+            id="preview"
+            class="preview prose"
+            aria-live="polite"
+            aria-label="Markdown preview"
+          ></article>
         </section>
       </main>
     </div>

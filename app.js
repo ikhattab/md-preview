@@ -27,6 +27,11 @@
   let scrollSyncTimeout = null;
   let scrollSyncEnabled = true;
 
+  // Prevent browser from trying to restore scroll positions on refresh
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
   const DEFAULT_CONTENT = `# Welcome to mdfor.work ✨
 
 Start typing your **markdown** on the left, and watch it transform into beautiful formatted text on the right — *instantly*.
@@ -309,6 +314,24 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     updatePreview();
   }
 
+  /**
+   * Keep editor caret and scroll at top to avoid jump on refresh
+   */
+  function normalizeEditorPosition() {
+    if (!editor) return;
+    // Place caret at start so the browser doesn't scroll to the end on focus
+    editor.setSelectionRange(0, 0);
+    editor.scrollTop = 0;
+  }
+
+  /**
+   * Reset scroll positions to top to avoid random restoration on refresh
+   */
+  function resetPaneScrollPositions() {
+    if (editor) editor.scrollTop = 0;
+    if (preview) preview.scrollTop = 0;
+  }
+
   // Debounced save function
   const debouncedSave = debounce(saveContent, DEBOUNCE_DELAY);
 
@@ -371,6 +394,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   function toggleCollapse() {
     const isCollapsed = editorPane.classList.toggle('collapsed');
     setStorageItem(STORAGE_KEYS.EDITOR_COLLAPSED, isCollapsed ? 'true' : 'false');
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }
 
     // Hide resize handle and expand preview when collapsed
     if (resizeHandle) {
@@ -396,6 +422,11 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       if (previewPane) {
         previewPane.style.flex = '1 1 100%';
       }
+      if (collapseBtn) {
+        collapseBtn.setAttribute('aria-expanded', 'false');
+      }
+    } else if (collapseBtn) {
+      collapseBtn.setAttribute('aria-expanded', 'true');
     }
   }
 
@@ -418,6 +449,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         scrollSyncToggle.classList.remove('active');
         scrollSyncToggle.title = 'Sync scrolling (off)';
       }
+      scrollSyncToggle.setAttribute('aria-pressed', scrollSyncEnabled ? 'true' : 'false');
     }
   }
 
@@ -437,6 +469,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         scrollSyncToggle.classList.remove('active');
         scrollSyncToggle.title = 'Sync scrolling (off)';
       }
+      scrollSyncToggle.setAttribute('aria-pressed', scrollSyncEnabled ? 'true' : 'false');
     }
   }
 
@@ -447,6 +480,18 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   let isResizing = false;
   let startX = 0;
   let startWidth = 0;
+  const KEY_RESIZE_STEP = 24;
+
+  /**
+   * Adjust editor width by a delta (keyboard support)
+   * Accessibility: allows resize via keyboard arrows on the separator
+   */
+  function adjustWidthBy(delta) {
+    const currentWidth = editorPane.offsetWidth;
+    const newWidth = Math.max(200, Math.min(currentWidth + delta, window.innerWidth - 300));
+    editorPane.style.flex = `0 0 ${newWidth}px`;
+    setStorageItem(STORAGE_KEYS.EDITOR_WIDTH, newWidth.toString());
+  }
 
   /**
    * Start resizing
@@ -480,6 +525,21 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     editorPane.style.flex = `0 0 ${newWidth}px`;
 
     e.preventDefault();
+  }
+
+  /**
+   * Handle keyboard-based resize for accessibility
+   */
+  function handleResizeKeydown(e) {
+    if (!resizeHandle || editorPane.classList.contains('collapsed')) return;
+
+    if (e.key === 'ArrowLeft') {
+      adjustWidthBy(-KEY_RESIZE_STEP);
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      adjustWidthBy(KEY_RESIZE_STEP);
+      e.preventDefault();
+    }
   }
 
   /**
@@ -536,11 +596,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
 
     // Update tab styles
     viewTabs.forEach((tab) => {
-      if (tab.dataset.view === view) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
+      const isActive = tab.dataset.view === view;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
 
     // Save preference
@@ -615,6 +673,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     if (resizeHandle) {
       resizeHandle.addEventListener('mousedown', startResize);
       resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+      resizeHandle.addEventListener('keydown', handleResizeKeydown);
 
       document.addEventListener('mousemove', handleResize);
       document.addEventListener('touchmove', handleResize, { passive: false });
@@ -678,6 +737,8 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     loadEditorWidth();
     loadScrollSyncPreference();
     loadContent();
+    resetPaneScrollPositions();
+    normalizeEditorPosition();
     setupEventListeners();
     initMobileView();
   }
