@@ -15,9 +15,17 @@
     EDITOR_WIDTH: 'md-preview-editor-width',
     EDITOR_COLLAPSED: 'md-preview-editor-collapsed',
     MOBILE_VIEW: 'md-preview-mobile-view',
+    SCROLL_SYNC: 'md-preview-scroll-sync',
   };
 
   const DEBOUNCE_DELAY = 300; // ms for auto-save debounce
+  const SCROLL_SYNC_DELAY = 50; // ms for scroll sync debounce
+
+  // Scroll sync state
+  let isScrollingEditor = false;
+  let isScrollingPreview = false;
+  let scrollSyncTimeout = null;
+  let scrollSyncEnabled = true;
 
   const DEFAULT_CONTENT = `# Welcome to mdfor.work ✨
 
@@ -72,6 +80,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   const resizeHandle = document.getElementById('resizeHandle');
   const mobileViewSwitcher = document.getElementById('mobileViewSwitcher');
   const viewTabs = mobileViewSwitcher ? mobileViewSwitcher.querySelectorAll('.view-tab') : [];
+  const scrollSyncToggle = document.getElementById('scrollSyncToggle');
   const html = document.documentElement;
 
   // Mobile breakpoint
@@ -95,6 +104,114 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       timeout = setTimeout(later, wait);
     };
   }
+
+  /**
+   * Throttle function to limit how often a function is called
+   */
+  function throttle(func, limit) {
+    let inThrottle;
+    return function executedFunction(...args) {
+      if (!inThrottle) {
+        func(...args);
+        inThrottle = true;
+        setTimeout(() => {
+          inThrottle = false;
+        }, limit);
+      }
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Scroll Sync Functions
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Smart proportional scroll sync.
+   *
+   * The key insight: We can't match line-to-line because editor lines != preview pixels.
+   * Instead, we use a hybrid approach:
+   * 1. Calculate scroll percentage (0 to 1) in the source
+   * 2. Apply the same percentage to the target, ensuring top->top and bottom->bottom
+   *
+   * This naturally handles:
+   * - Images (1 line in editor = many pixels in preview)
+   * - Code blocks with wrapping
+   * - Any content with different height ratios
+   */
+
+  /**
+   * Calculate scroll percentage (0 to 1) for an element
+   * 0 = at top, 1 = at bottom
+   */
+  function getScrollPercentage(element) {
+    const scrollTop = element.scrollTop;
+    const scrollHeight = element.scrollHeight - element.clientHeight;
+    if (scrollHeight <= 0) return 0;
+    return Math.min(1, Math.max(0, scrollTop / scrollHeight));
+  }
+
+  /**
+   * Set scroll position by percentage (0 to 1)
+   */
+  function setScrollByPercentage(element, percentage) {
+    const scrollHeight = element.scrollHeight - element.clientHeight;
+    if (scrollHeight <= 0) return;
+    element.scrollTop = percentage * scrollHeight;
+  }
+
+  /**
+   * Sync scroll from editor to preview using proportional scrolling
+   */
+  function syncEditorToPreview() {
+    if (!scrollSyncEnabled || isScrollingPreview) return;
+
+    const editorScrollHeight = editor.scrollHeight - editor.clientHeight;
+    const previewScrollHeight = preview.scrollHeight - preview.clientHeight;
+
+    // No scrollable content
+    if (editorScrollHeight <= 0 || previewScrollHeight <= 0) return;
+
+    // Get scroll percentage from editor
+    const scrollPercent = getScrollPercentage(editor);
+
+    // Apply to preview
+    isScrollingEditor = true;
+    setScrollByPercentage(preview, scrollPercent);
+
+    clearTimeout(scrollSyncTimeout);
+    scrollSyncTimeout = setTimeout(() => {
+      isScrollingEditor = false;
+    }, SCROLL_SYNC_DELAY);
+  }
+
+  /**
+   * Sync scroll from preview to editor using proportional scrolling
+   */
+  function syncPreviewToEditor() {
+    if (!scrollSyncEnabled || isScrollingEditor) return;
+
+    const editorScrollHeight = editor.scrollHeight - editor.clientHeight;
+    const previewScrollHeight = preview.scrollHeight - preview.clientHeight;
+
+    // No scrollable content
+    if (editorScrollHeight <= 0 || previewScrollHeight <= 0) return;
+
+    // Get scroll percentage from preview
+    const scrollPercent = getScrollPercentage(preview);
+
+    // Apply to editor
+    isScrollingPreview = true;
+    setScrollByPercentage(editor, scrollPercent);
+
+    clearTimeout(scrollSyncTimeout);
+    scrollSyncTimeout = setTimeout(() => {
+      isScrollingPreview = false;
+    }, SCROLL_SYNC_DELAY);
+  }
+
+  // Throttled scroll sync functions
+  const throttledSyncEditorToPreview = throttle(syncEditorToPreview, SCROLL_SYNC_DELAY);
+  const throttledSyncPreviewToEditor = throttle(syncPreviewToEditor, SCROLL_SYNC_DELAY);
 
   /**
    * Safely get item from localStorage
@@ -278,6 +395,47 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       }
       if (previewPane) {
         previewPane.style.flex = '1 1 100%';
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Scroll Sync Toggle
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Toggle scroll sync on/off
+   */
+  function toggleScrollSync() {
+    scrollSyncEnabled = !scrollSyncEnabled;
+    setStorageItem(STORAGE_KEYS.SCROLL_SYNC, scrollSyncEnabled ? 'true' : 'false');
+
+    if (scrollSyncToggle) {
+      if (scrollSyncEnabled) {
+        scrollSyncToggle.classList.add('active');
+        scrollSyncToggle.title = 'Sync scrolling (on)';
+      } else {
+        scrollSyncToggle.classList.remove('active');
+        scrollSyncToggle.title = 'Sync scrolling (off)';
+      }
+    }
+  }
+
+  /**
+   * Load saved scroll sync preference
+   */
+  function loadScrollSyncPreference() {
+    const savedState = getStorageItem(STORAGE_KEYS.SCROLL_SYNC);
+    // Default to enabled if no preference saved
+    scrollSyncEnabled = savedState !== 'false';
+
+    if (scrollSyncToggle) {
+      if (scrollSyncEnabled) {
+        scrollSyncToggle.classList.add('active');
+        scrollSyncToggle.title = 'Sync scrolling (on)';
+      } else {
+        scrollSyncToggle.classList.remove('active');
+        scrollSyncToggle.title = 'Sync scrolling (off)';
       }
     }
   }
@@ -473,6 +631,11 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       }
     });
 
+    // Scroll sync toggle
+    if (scrollSyncToggle) {
+      scrollSyncToggle.addEventListener('click', toggleScrollSync);
+    }
+
     // Mobile view switcher
     viewTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
@@ -485,6 +648,19 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(handleViewportResize, 100);
+    });
+
+    // Scroll sync event listeners (only on desktop)
+    editor.addEventListener('scroll', () => {
+      if (!isMobile()) {
+        throttledSyncEditorToPreview();
+      }
+    });
+
+    preview.addEventListener('scroll', () => {
+      if (!isMobile()) {
+        throttledSyncPreviewToEditor();
+      }
     });
 
     // Save before page unload (belt and suspenders)
@@ -500,6 +676,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     loadTheme();
     loadCollapseState();
     loadEditorWidth();
+    loadScrollSyncPreference();
     loadContent();
     setupEventListeners();
     initMobileView();

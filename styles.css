@@ -151,7 +151,8 @@ button {
   transition: all 0.2s ease;
 }
 
-.theme-toggle {
+.theme-toggle,
+.scroll-sync-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +162,8 @@ button {
   color: var(--text-secondary);
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.scroll-sync-toggle:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
 }
@@ -169,6 +171,42 @@ button {
 [data-theme='light'] .dark-icon,
 [data-theme='dark'] .light-icon {
   display: none;
+}
+
+/* Scroll Sync Toggle */
+.scroll-sync-toggle {
+  position: relative;
+}
+
+.scroll-sync-toggle .unsynced-icon {
+  display: none;
+}
+
+.scroll-sync-toggle.active {
+  color: var(--link-color);
+}
+
+.scroll-sync-toggle.active:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+[data-theme='dark'] .scroll-sync-toggle.active:hover {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.scroll-sync-toggle:not(.active) .synced-icon {
+  display: none;
+}
+
+.scroll-sync-toggle:not(.active) .unsynced-icon {
+  display: block;
+}
+
+/* Hide scroll sync toggle on mobile */
+@media (max-width: 768px) {
+  .scroll-sync-toggle {
+    display: none;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────
