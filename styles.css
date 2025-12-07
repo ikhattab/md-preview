@@ -470,7 +470,10 @@ textarea:focus:not(:focus-visible) {
 }
 
 .editor-pane.collapsed .editor,
-.editor-pane.collapsed .pane-title {
+.editor-pane.collapsed .pane-title,
+.editor-pane.collapsed .line-gutter,
+.editor-pane.collapsed .field,
+.editor-pane.collapsed .lint-panel {
   display: none;
 }
 
@@ -479,7 +482,8 @@ textarea:focus:not(:focus-visible) {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 1rem 0;
+  padding: 0;
+  height: 100%;
   pointer-events: none; /* Let clicks pass through to pane */
 }
 
@@ -507,6 +511,26 @@ textarea:focus:not(:focus-visible) {
 
 .editor-pane.collapsed ~ .preview-pane .prose {
   max-width: 80ch; /* Wider than default 65ch */
+  font-size: 1.1rem; /* Larger text for easier reading */
+  line-height: 1.85; /* More generous line height */
+}
+
+/* Larger headings in zen mode */
+.editor-pane.collapsed ~ .preview-pane .prose h1 {
+  font-size: 2.5rem;
+}
+
+.editor-pane.collapsed ~ .preview-pane .prose h2 {
+  font-size: 1.75rem;
+}
+
+.editor-pane.collapsed ~ .preview-pane .prose h3 {
+  font-size: 1.4rem;
+}
+
+/* More relaxed paragraph spacing */
+.editor-pane.collapsed ~ .preview-pane .prose p {
+  margin-bottom: 1.75em;
 }
 
 /* Resize Handle */

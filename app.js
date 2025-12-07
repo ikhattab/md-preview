@@ -698,10 +698,17 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       check: (lines) => {
         const warnings = [];
         lines.forEach((line, i) => {
-          // Match single * or _ with spaces inside, not ** or __
+          // Match single * or _ with spaces inside. Exclude ** and __
           // Pattern: single * not preceded by *, followed by space, content, space, single * not followed by *
           if (/(?<!\*)\*\s+[^*]+\s+\*(?!\*)/.test(line) || /(?<!_)_\s+[^_]+\s+_(?!_)/.test(line)) {
             warnings.push({ line: i + 1, message: 'Spaces inside emphasis markers' });
+          }
+          // Match double ** or __ with spaces inside
+          else if (
+            /\*\*\s+(?:(?!\*\*).)+\s+\*\*/.test(line) ||
+            /__\s+(?:(?!__).)+\s+__/.test(line)
+          ) {
+            warnings.push({ line: i + 1, message: 'Spaces inside bold markers' });
           }
         });
         return warnings;
