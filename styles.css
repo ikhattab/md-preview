@@ -257,11 +257,12 @@ button {
 /* Collapse Button */
 .collapse-btn {
   display: flex;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
 }
 
 .collapse-btn:hover {
