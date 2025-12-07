@@ -67,35 +67,130 @@
   <body>
     <div class="app">
       <header class="header">
-        <h1 class="logo">mdfor.work</h1>
-        <div class="mobile-view-switcher" id="mobileViewSwitcher">
-          <button class="view-tab active" data-view="editor" aria-label="Show editor">
-            <span class="view-tab-icon">✏️</span>
-            <span class="view-tab-label">Editor</span>
-          </button>
-          <button class="view-tab" data-view="preview" aria-label="Show preview">
-            <span class="view-tab-icon">👁️</span>
-            <span class="view-tab-label">Preview</span>
+        <div class="logo-container">
+          <svg
+            class="logo-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M9 13v-1h6v1" />
+            <path d="M12 12v6" />
+            <path d="M11 18h2" />
+          </svg>
+          <h1 class="logo">mdfor.work</h1>
+        </div>
+
+        <div class="header-controls">
+          <div class="mobile-view-switcher" id="mobileViewSwitcher">
+            <button class="view-tab active" data-view="editor" aria-label="Show editor">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+              <span class="view-tab-label">Editor</span>
+            </button>
+            <button class="view-tab" data-view="preview" aria-label="Show preview">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span class="view-tab-label">Preview</span>
+            </button>
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <!-- Sun Icon -->
+            <svg
+              class="theme-icon light-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon -->
+            <svg
+              class="theme-icon dark-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
           </button>
         </div>
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-          <span class="theme-icon light-icon">☀️</span>
-          <span class="theme-icon dark-icon">🌙</span>
-        </button>
       </header>
 
       <main class="editor-container">
         <section class="pane editor-pane" id="editorPane">
           <div class="pane-header">
-            <span class="pane-title">Editor</span>
+            <span class="pane-title">Markdown</span>
             <button class="collapse-btn" id="collapseEditor" aria-label="Collapse editor">
-              <span class="collapse-icon">◀</span>
+              <svg
+                class="collapse-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
             </button>
           </div>
           <textarea
             id="editor"
             class="editor"
-            placeholder="Start writing your markdown here..."
+            placeholder="Start writing..."
             spellcheck="true"
             autofocus
           ></textarea>
