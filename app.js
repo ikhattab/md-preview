@@ -80,7 +80,6 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   const preview = document.getElementById('preview');
   const themeToggle = document.getElementById('themeToggle');
   const editorPane = document.getElementById('editorPane');
-  const editorHeader = editorPane ? editorPane.querySelector('.pane-header') : null;
   const previewPane = document.getElementById('previewPane');
   const collapseBtn = document.getElementById('collapseEditor');
   const resizeHandle = document.getElementById('resizeHandle');
@@ -656,9 +655,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       collapseBtn.addEventListener('click', toggleCollapse);
     }
 
-    // Click on collapsed header to expand
-    if (editorHeader) {
-      editorHeader.addEventListener('click', (e) => {
+    // Click on collapsed pane to expand
+    if (editorPane) {
+      editorPane.addEventListener('click', (e) => {
         // Only expand if collapsed and click wasn't on the button itself
         if (
           editorPane.classList.contains('collapsed') &&

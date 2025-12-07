@@ -346,6 +346,12 @@ textarea:focus:not(:focus-visible) {
   flex: 0 0 3.5rem !important; /* Narrow strip */
   min-width: 3.5rem !important;
   border-right: 1px solid var(--border-color);
+  cursor: pointer; /* Entire pane is clickable */
+  transition: background-color 0.15s ease;
+}
+
+.editor-pane.collapsed:hover {
+  background: var(--bg-tertiary);
 }
 
 .editor-pane.collapsed .editor,
@@ -359,12 +365,7 @@ textarea:focus:not(:focus-visible) {
   justify-content: center;
   align-items: center;
   padding: 1rem 0;
-  cursor: pointer; /* Indicate it's clickable */
-  transition: background-color 0.15s ease;
-}
-
-.editor-pane.collapsed .pane-header:hover {
-  background: var(--bg-tertiary);
+  pointer-events: none; /* Let clicks pass through to pane */
 }
 
 .editor-pane.collapsed .collapse-btn {
