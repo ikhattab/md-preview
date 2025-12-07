@@ -520,6 +520,12 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     if (previewPane) {
       previewPane.style.flex = isCollapsed ? '1 1 100%' : '1';
     }
+
+    // Toggle Zen Mode on app container
+    const app = document.querySelector('.app');
+    if (app) {
+      app.classList.toggle('zen-mode', isCollapsed);
+    }
   }
 
   /**
@@ -537,6 +543,10 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       }
       if (collapseBtn) {
         collapseBtn.setAttribute('aria-expanded', 'false');
+      }
+      const app = document.querySelector('.app');
+      if (app) {
+        app.classList.add('zen-mode');
       }
     } else if (collapseBtn) {
       collapseBtn.setAttribute('aria-expanded', 'true');

@@ -504,13 +504,19 @@ textarea:focus:not(:focus-visible) {
   display: none;
 }
 
+/* Hide sync/lint controls in Zen Mode */
+.app.zen-mode .scroll-sync-toggle,
+.app.zen-mode .lint-toggle {
+  display: none;
+}
+
 /* Expand prose for wider reading experience */
 .editor-pane.collapsed ~ .preview-pane .preview {
   padding: 3rem 4rem;
 }
 
 .editor-pane.collapsed ~ .preview-pane .prose {
-  max-width: 80ch; /* Wider than default 65ch */
+  max-width: 90ch; /* Wider than default 65ch */
   font-size: 1.1rem; /* Larger text for easier reading */
   line-height: 1.85; /* More generous line height */
 }
