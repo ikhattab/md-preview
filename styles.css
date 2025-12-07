@@ -393,6 +393,7 @@ textarea:focus:not(:focus-visible) {
   flex: 1;
   overflow: hidden;
   position: relative;
+  min-height: 0; /* Allow inner panes to scroll */
 }
 
 .pane {
@@ -402,12 +403,14 @@ textarea:focus:not(:focus-visible) {
   min-width: 0; /* Prevent flex blowout */
   height: 100%;
   background: var(--bg-primary);
+  min-height: 0; /* Prevent content from forcing the pane taller than viewport */
 }
 
 .field {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0; /* Let editor area shrink so textarea can scroll */
 }
 
 .editor-pane {
@@ -574,6 +577,7 @@ textarea:focus:not(:focus-visible) {
   overflow: hidden;
   position: relative;
   z-index: 1; /* Create stacking context */
+  min-height: 0; /* Ensure child scrollers are allowed to scroll */
 }
 
 .line-gutter {
@@ -588,7 +592,8 @@ textarea:focus:not(:focus-visible) {
   color: var(--text-muted);
   text-align: right;
   user-select: none;
-  overflow: visible; /* Allow tooltip to escape */
+  overflow-y: auto; /* Keep line numbers scrollable with the editor */
+  overflow-x: visible; /* Allow tooltip to escape horizontally */
   position: relative;
   z-index: 10; /* Above editor content for tooltips */
 }
@@ -675,6 +680,8 @@ textarea:focus:not(:focus-visible) {
   line-height: 1.7;
   resize: none;
   outline: none;
+  overflow: auto; /* Explicitly enable scrolling for long documents */
+  -webkit-overflow-scrolling: touch;
 }
 
 .editor::placeholder {
@@ -690,6 +697,7 @@ textarea:focus:not(:focus-visible) {
   padding: 1rem 2.5rem 2rem;
   overflow-y: auto;
   color: var(--text-primary);
+  min-height: 0; /* Allow preview to scroll within the pane */
 }
 
 .prose {
