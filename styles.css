@@ -200,6 +200,18 @@ textarea:focus-visible {
   box-shadow: 0 0 0 2px var(--link-color);
 }
 
+/* Hide focus styles for mouse/touch interactions */
+button:focus:not(:focus-visible),
+.view-tab:focus:not(:focus-visible),
+.collapse-btn:focus:not(:focus-visible),
+.scroll-sync-toggle:focus:not(:focus-visible),
+.theme-toggle:focus:not(:focus-visible),
+.resize-handle:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
 .theme-toggle,
 .scroll-sync-toggle {
   display: flex;
