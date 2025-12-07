@@ -536,33 +536,206 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Mobile View Switcher (Hidden on Desktop)
+   ───────────────────────────────────────────────────────────────── */
+.mobile-view-switcher {
+  display: none; /* Hidden on desktop by default */
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Mobile Responsive Layout
    ───────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .editor-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
+  /* Show mobile view switcher */
+  .mobile-view-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
   }
 
-  .header {
-    padding: 0.6rem 1rem;
+  .view-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    min-height: 36px;
   }
 
-  .logo {
-    font-size: 1.1rem;
+  .view-tab:hover {
+    color: var(--text-secondary);
+    background: var(--accent-glow);
   }
 
-  .editor {
-    padding: 1rem;
+  .view-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+
+  .view-tab-icon {
     font-size: 0.9rem;
   }
 
+  .view-tab-label {
+    display: none; /* Hide labels on very small screens, show icons only */
+  }
+
+  @media (min-width: 400px) {
+    .view-tab-label {
+      display: inline;
+    }
+  }
+
+  /* Header adjustments */
+  .header {
+    padding: 0.6rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .logo {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+  }
+
+  /* Editor container - stack vertically, show one at a time */
+  .editor-container {
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Hide resize handle on mobile */
+  .resize-handle {
+    display: none !important;
+  }
+
+  /* Hide pane headers on mobile (view switcher replaces them) */
+  .pane-header {
+    display: none;
+  }
+
+  /* Pane styles for mobile - full height/width */
+  .pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  /* Active pane on mobile */
+  .pane.mobile-active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+  }
+
+  /* Editor pane mobile styles */
+  .editor-pane {
+    flex: none !important;
+  }
+
+  .editor-pane.collapsed {
+    /* Reset collapsed state on mobile - we use view switching instead */
+    flex: none !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .editor-pane.collapsed .editor {
+    display: block;
+  }
+
+  .editor-pane.collapsed .pane-header {
+    display: none;
+  }
+
+  /* Editor textarea mobile improvements */
+  .editor {
+    padding: 1rem;
+    font-size: 16px; /* Prevent iOS zoom on focus */
+    line-height: 1.7;
+  }
+
+  /* Preview pane mobile styles */
+  .preview-pane {
+    flex: none !important;
+  }
+
   .preview {
-    padding: 1.25rem;
+    padding: 1.25rem 1rem;
+    padding-bottom: 2rem; /* Extra bottom padding for easier scrolling */
   }
 
   .prose {
     font-size: 1rem;
+    max-width: none; /* Full width on mobile */
+  }
+
+  /* Adjust prose elements for mobile */
+  .prose h1 {
+    font-size: 1.6rem;
+  }
+
+  .prose h2 {
+    font-size: 1.3rem;
+  }
+
+  .prose h3 {
+    font-size: 1.15rem;
+  }
+
+  .prose pre {
+    padding: 1rem;
+    font-size: 0.85rem;
+    border-radius: 0.5rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+
+  .prose blockquote {
+    padding: 0.75rem 1rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .prose table {
+    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
+  }
+
+  .prose th,
+  .prose td {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Editor collapsed state reset on mobile */
+  .editor-pane.collapsed ~ .preview-pane .prose {
+    max-width: none;
   }
 }
 

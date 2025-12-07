@@ -14,6 +14,7 @@
     THEME: 'md-preview-theme',
     EDITOR_WIDTH: 'md-preview-editor-width',
     EDITOR_COLLAPSED: 'md-preview-editor-collapsed',
+    MOBILE_VIEW: 'md-preview-mobile-view',
   };
 
   const DEBOUNCE_DELAY = 300; // ms for auto-save debounce
@@ -69,7 +70,12 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   const previewPane = document.getElementById('previewPane');
   const collapseBtn = document.getElementById('collapseEditor');
   const resizeHandle = document.getElementById('resizeHandle');
+  const mobileViewSwitcher = document.getElementById('mobileViewSwitcher');
+  const viewTabs = mobileViewSwitcher ? mobileViewSwitcher.querySelectorAll('.view-tab') : [];
   const html = document.documentElement;
+
+  // Mobile breakpoint
+  const MOBILE_BREAKPOINT = 768;
 
   // ═══════════════════════════════════════════════════════════════
   // Utility Functions
@@ -345,6 +351,76 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Mobile View Switching
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Check if currently in mobile viewport
+   */
+  function isMobile() {
+    return window.innerWidth <= MOBILE_BREAKPOINT;
+  }
+
+  /**
+   * Set the active mobile view (editor or preview)
+   */
+  function setMobileView(view) {
+    if (!isMobile()) return;
+
+    // Update pane visibility
+    if (view === 'editor') {
+      editorPane.classList.add('mobile-active');
+      previewPane.classList.remove('mobile-active');
+    } else {
+      editorPane.classList.remove('mobile-active');
+      previewPane.classList.add('mobile-active');
+    }
+
+    // Update tab styles
+    viewTabs.forEach((tab) => {
+      if (tab.dataset.view === view) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+
+    // Save preference
+    setStorageItem(STORAGE_KEYS.MOBILE_VIEW, view);
+  }
+
+  /**
+   * Initialize mobile view state
+   */
+  function initMobileView() {
+    if (!isMobile()) {
+      // On desktop, remove mobile-active classes
+      editorPane.classList.remove('mobile-active');
+      previewPane.classList.remove('mobile-active');
+      return;
+    }
+
+    // Get saved preference or default to editor
+    const savedView = getStorageItem(STORAGE_KEYS.MOBILE_VIEW) || 'editor';
+    setMobileView(savedView);
+  }
+
+  /**
+   * Handle viewport resize - transition between mobile/desktop
+   */
+  function handleViewportResize() {
+    if (isMobile()) {
+      // Entering mobile mode - initialize mobile view
+      const savedView = getStorageItem(STORAGE_KEYS.MOBILE_VIEW) || 'editor';
+      setMobileView(savedView);
+    } else {
+      // Entering desktop mode - remove mobile classes
+      editorPane.classList.remove('mobile-active');
+      previewPane.classList.remove('mobile-active');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Event Listeners
   // ═══════════════════════════════════════════════════════════════
 
@@ -397,6 +473,20 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       }
     });
 
+    // Mobile view switcher
+    viewTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        setMobileView(tab.dataset.view);
+      });
+    });
+
+    // Handle viewport resize for mobile/desktop transitions
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(handleViewportResize, 100);
+    });
+
     // Save before page unload (belt and suspenders)
     window.addEventListener('beforeunload', saveContent);
   }
@@ -412,6 +502,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     loadEditorWidth();
     loadContent();
     setupEventListeners();
+    initMobileView();
   }
 
   // Start the app when DOM is ready
