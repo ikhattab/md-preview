@@ -1,17 +1,13 @@
-# Use a lightweight Node.js image with 'serve' for static file serving
-FROM node:20-alpine
+# Static file server using Caddy (better headers/compression than `serve`)
+FROM caddy:2.8-alpine
 
-# Install serve globally
-RUN npm install -g serve
+WORKDIR /srv
 
-# Set working directory
-WORKDIR /app
+# Copy site assets
+COPY . /srv
 
-# Copy static files
-COPY . .
-
-# Expose port 3000
+# Listen on Fly's internal port
 EXPOSE 3000
 
-# Run serve on port 3000
-CMD ["serve", "-s", ".", "-l", "3000"]
+# file-server sets sensible defaults; Fly terminates TLS at the edge
+CMD ["caddy", "file-server", "--root", "/srv", "--listen", ":3000"]
