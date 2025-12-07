@@ -1,0 +1,529 @@
+/* ═══════════════════════════════════════════════════════════════
+   MD Preview — Styles
+   A distraction-free, beautiful markdown editor
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────
+   CSS Variables & Theming
+   ───────────────────────────────────────────────────────────────── */
+:root {
+    /* Light Theme (Default) */
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f5f5f5;
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a68;
+    --text-muted: #8888a0;
+    --border-color: #e8e8f0;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --code-bg: #f0f0f5;
+    --blockquote-border: #6366f1;
+    --link-color: #6366f1;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-tertiary: #252540;
+    --text-primary: #f0f0f5;
+    --text-secondary: #b8b8d0;
+    --text-muted: #6868a0;
+    --border-color: #2a2a45;
+    --accent: #818cf8;
+    --accent-glow: rgba(129, 140, 248, 0.2);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --code-bg: #252540;
+    --blockquote-border: #818cf8;
+    --link-color: #a5b4fc;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Reset & Base
+   ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   App Layout
+   ───────────────────────────────────────────────────────────────── */
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Header
+   ───────────────────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+}
+
+.logo {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+}
+
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.theme-icon {
+    font-size: 1.1rem;
+    transition: opacity 0.2s ease;
+}
+
+[data-theme="light"] .dark-icon,
+[data-theme="dark"] .light-icon {
+    display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Editor Container (Split Panes)
+   ───────────────────────────────────────────────────────────────── */
+.editor-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background: var(--border-color);
+}
+
+.pane {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    overflow: hidden;
+    flex: 1;
+    min-width: 200px;
+}
+
+.editor-pane {
+    flex: 0 0 50%;
+    transition: flex 0.3s ease, width 0.3s ease, min-width 0.3s ease;
+}
+
+.preview-pane {
+    flex: 1;
+    min-width: 0;
+}
+
+.pane-header {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.pane-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Collapse Button
+   ───────────────────────────────────────────────────────────────── */
+.pane-header {
+    justify-content: space-between;
+}
+
+.collapse-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.collapse-icon {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+}
+
+.editor-pane.collapsed .collapse-icon {
+    transform: rotate(180deg);
+}
+
+/* Collapsed state */
+.editor-pane.collapsed {
+    flex: 0 0 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+}
+
+.editor-pane.collapsed .editor {
+    display: none;
+}
+
+.editor-pane.collapsed .pane-header {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    padding: 1rem 0.6rem;
+    height: 100%;
+    cursor: pointer;
+}
+
+.editor-pane.collapsed .pane-header:hover {
+    background: var(--accent-glow);
+}
+
+.editor-pane.collapsed + .resize-handle {
+    display: none !important;
+}
+
+.editor-pane.collapsed + .resize-handle + .preview-pane,
+.editor-pane.collapsed ~ .preview-pane {
+    flex: 1 1 auto !important;
+}
+
+.editor-pane.collapsed .pane-title {
+    margin-bottom: auto;
+}
+
+.editor-pane.collapsed .collapse-btn {
+    margin-top: 0.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Resize Handle
+   ───────────────────────────────────────────────────────────────── */
+.resize-handle {
+    width: 6px;
+    background: var(--border-color);
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.resize-handle:hover,
+.resize-handle.resizing {
+    background: var(--accent);
+}
+
+.resize-line {
+    width: 2px;
+    height: 40px;
+    background: var(--text-muted);
+    border-radius: 1px;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover .resize-line,
+.resize-handle.resizing .resize-line {
+    opacity: 1;
+    background: white;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Editor Pane
+   ───────────────────────────────────────────────────────────────── */
+.editor {
+    flex: 1;
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    overflow-y: auto;
+    font-feature-settings: 'liga' on, 'calt' on;
+}
+
+.editor::placeholder {
+    color: var(--text-muted);
+}
+
+.editor:focus {
+    background: var(--bg-secondary);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Preview Pane (Document-Style Prose)
+   ───────────────────────────────────────────────────────────────── */
+.preview {
+    flex: 1;
+    padding: 2rem 2.5rem;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+}
+
+/* Prose Styling — Optimized for readability */
+.prose {
+    max-width: 72ch;
+    margin: 0 auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: var(--text-primary);
+    transition: max-width 0.3s ease;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Expand prose when editor is collapsed */
+.editor-pane.collapsed ~ .preview-pane .prose {
+    max-width: 90ch;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    margin-top: 2em;
+    margin-bottom: 0.75em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-primary);
+}
+
+.prose h1:first-child, .prose h2:first-child, .prose h3:first-child {
+    margin-top: 0;
+}
+
+.prose h1 { font-size: 2rem; letter-spacing: -0.02em; }
+.prose h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+.prose h3 { font-size: 1.25rem; }
+.prose h4 { font-size: 1.1rem; }
+
+.prose p {
+    margin-bottom: 1.25em;
+}
+
+.prose a {
+    color: var(--link-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.2s ease;
+}
+
+.prose a:hover {
+    opacity: 0.8;
+}
+
+.prose strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.prose em {
+    font-style: italic;
+}
+
+.prose ul, .prose ol {
+    margin-bottom: 1.25em;
+    padding-left: 1.5em;
+}
+
+.prose li {
+    margin-bottom: 0.5em;
+}
+
+.prose li > ul, .prose li > ol {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+}
+
+.prose blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.5em;
+    border-left: 4px solid var(--blockquote-border);
+    background: var(--bg-tertiary);
+    border-radius: 0 0.5rem 0.5rem 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.prose blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+.prose code {
+    padding: 0.2em 0.4em;
+    background: var(--code-bg);
+    border-radius: 0.25rem;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: var(--accent);
+}
+
+.prose pre {
+    margin: 1.5em 0;
+    padding: 1.25em;
+    background: var(--code-bg);
+    border-radius: 0.75rem;
+    overflow-x: auto;
+}
+
+.prose pre code {
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.prose hr {
+    margin: 2.5em 0;
+    border: none;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1.5em 0;
+}
+
+.prose table {
+    width: 100%;
+    margin: 1.5em 0;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.prose th, .prose td {
+    padding: 0.75em 1em;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.prose th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+.prose tr:nth-child(even) {
+    background: var(--bg-tertiary);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Scrollbar Styling
+   ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Mobile Responsive Layout
+   ───────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .editor-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+    }
+
+    .header {
+        padding: 0.6rem 1rem;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .editor {
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .preview {
+        padding: 1.25rem;
+    }
+
+    .prose {
+        font-size: 1rem;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Transitions for Theme Switching
+   ───────────────────────────────────────────────────────────────── */
+.header, .pane, .pane-header, .editor, .preview, .theme-toggle {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}

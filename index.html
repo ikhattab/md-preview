@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="mdfor.work — A fast, private markdown editor with instant live preview. Write and see your formatted document in real-time.">
+    <meta name="keywords" content="markdown, preview, editor, live, real-time, writing, documentation, mdfor.work">
+    <title>mdfor.work — Instant Markdown Editor</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1 class="logo">mdfor.work</h1>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <span class="theme-icon light-icon">☀️</span>
+                <span class="theme-icon dark-icon">🌙</span>
+            </button>
+        </header>
+
+        <main class="editor-container">
+            <section class="pane editor-pane" id="editorPane">
+                <div class="pane-header">
+                    <span class="pane-title">Editor</span>
+                    <button class="collapse-btn" id="collapseEditor" aria-label="Collapse editor">
+                        <span class="collapse-icon">◀</span>
+                    </button>
+                </div>
+                <textarea
+                    id="editor"
+                    class="editor"
+                    placeholder="Start writing your markdown here..."
+                    spellcheck="true"
+                    autofocus
+                ></textarea>
+            </section>
+
+            <div class="resize-handle" id="resizeHandle">
+                <div class="resize-line"></div>
+            </div>
+
+            <section class="pane preview-pane" id="previewPane">
+                <div class="pane-header">
+                    <span class="pane-title">Preview</span>
+                </div>
+                <article id="preview" class="preview prose"></article>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
