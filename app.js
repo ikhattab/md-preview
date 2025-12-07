@@ -40,7 +40,7 @@
 
   const DEFAULT_CONTENT = `# Welcome to mdfor.work ✨
 
-Start typing your **markdown** on the left, and watch it transform into beautiful formatted text on the right — *instantly*.
+Start typing your **markdown** in the editor, and watch it transform into beautiful formatted text in the preview — *instantly*.
 
 ## Features
 
