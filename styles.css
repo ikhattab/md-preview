@@ -430,7 +430,13 @@ body {
     background: transparent;
     border-radius: 0;
     font-size: 0.85rem;
-    color: var(--text-primary);
+    color: inherit;
+}
+
+/* Highlight.js theme overrides for app theme awareness */
+.prose pre code.hljs {
+    background: transparent;
+    padding: 0;
 }
 
 .prose hr {

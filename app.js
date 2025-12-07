@@ -118,16 +118,39 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Configure marked.js options
+     * Configure marked.js options with syntax highlighting
      */
     function configureMarked() {
         if (typeof marked !== 'undefined') {
+            // Create a custom renderer for code blocks with Highlight.js
+            const renderer = new marked.Renderer();
+
+            renderer.code = function(code, language) {
+                // Handle the case where code is an object (newer marked versions)
+                let codeText = typeof code === 'object' ? code.text : code;
+                let lang = typeof code === 'object' ? code.lang : language;
+
+                if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+                    try {
+                        const highlighted = hljs.highlight(codeText, { language: lang }).value;
+                        return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                    } catch (e) {
+                        console.warn('Highlight.js error:', e);
+                    }
+                }
+
+                // Fallback: escape HTML and return without highlighting
+                const escaped = codeText
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                return `<pre><code>${escaped}</code></pre>`;
+            };
+
             marked.setOptions({
                 breaks: true,         // Convert \n to <br>
                 gfm: true,           // GitHub Flavored Markdown
-                headerIds: true,     // Add IDs to headers
-                mangle: false,       // Don't escape autolinked emails
-                sanitize: false      // Allow HTML (we trust user input since it's local)
+                renderer: renderer
             });
         }
     }
@@ -179,6 +202,19 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     function setTheme(theme) {
         html.setAttribute('data-theme', theme);
         setStorageItem(STORAGE_KEYS.THEME, theme);
+
+        // Update Highlight.js theme
+        const hljsLight = document.getElementById('hljs-theme-light');
+        const hljsDark = document.getElementById('hljs-theme-dark');
+        if (hljsLight && hljsDark) {
+            if (theme === 'dark') {
+                hljsLight.disabled = true;
+                hljsDark.disabled = false;
+            } else {
+                hljsLight.disabled = false;
+                hljsDark.disabled = true;
+            }
+        }
     }
 
     /**
