@@ -25,7 +25,7 @@
   let isScrollingEditor = false;
   let isScrollingPreview = false;
   let scrollSyncTimeout = null;
-  let scrollSyncEnabled = true;
+  let scrollSyncEnabled = false;
 
   // Prevent browser from trying to restore scroll positions on refresh
   if ('scrollRestoration' in history) {
@@ -42,6 +42,7 @@ Start typing your **markdown** on the left, and watch it transform into beautifu
 - 🌓 **Dark & Light Modes** — Easy on your eyes
 - 💾 **Auto-Save** — Never lose your work
 - 🔒 **100% Private** — Everything stays in your browser
+- 🔗 **Scroll Sync** — Click the link icon in header to sync scrolling
 
 ## Try Some Markdown
 
@@ -458,8 +459,8 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
    */
   function loadScrollSyncPreference() {
     const savedState = getStorageItem(STORAGE_KEYS.SCROLL_SYNC);
-    // Default to enabled if no preference saved
-    scrollSyncEnabled = savedState !== 'false';
+    // Default to disabled if no preference saved
+    scrollSyncEnabled = savedState === 'true';
 
     if (scrollSyncToggle) {
       if (scrollSyncEnabled) {
