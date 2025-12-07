@@ -186,6 +186,36 @@
               <line x1="19" y1="16" x2="22" y2="16"></line>
             </svg>
           </button>
+          <button
+            class="lint-toggle"
+            id="lintToggle"
+            aria-label="Toggle markdown linting"
+            title="Lint markdown (off)"
+            aria-pressed="false"
+          >
+            <!-- Warning/Check icon -->
+            <svg
+              class="lint-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              ></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span class="lint-count" id="lintCount" aria-live="polite"></span>
+          </button>
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
             <!-- Sun Icon -->
             <svg
@@ -256,18 +286,24 @@
               </svg>
             </button>
           </header>
+          <div class="lint-panel" id="lintPanel" aria-live="polite" role="log">
+            <ul class="lint-list" id="lintList"></ul>
+          </div>
           <div class="field">
             <label class="sr-only" for="editor">Markdown input</label>
             <p class="sr-only" id="editorDescription">
               Type markdown to see a live preview alongside.
             </p>
-            <textarea
-              id="editor"
-              class="editor"
-              placeholder="Start writing..."
-              spellcheck="true"
-              aria-describedby="editorDescription"
-            ></textarea>
+            <div class="editor-wrapper">
+              <div class="line-gutter" id="lineGutter" aria-hidden="true"></div>
+              <textarea
+                id="editor"
+                class="editor"
+                placeholder="Start writing..."
+                spellcheck="true"
+                aria-describedby="editorDescription"
+              ></textarea>
+            </div>
           </div>
         </section>
 

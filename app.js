@@ -16,16 +16,22 @@
     EDITOR_COLLAPSED: 'md-preview-editor-collapsed',
     MOBILE_VIEW: 'md-preview-mobile-view',
     SCROLL_SYNC: 'md-preview-scroll-sync',
+    LINT_ENABLED: 'md-preview-lint-enabled',
   };
 
   const DEBOUNCE_DELAY = 300; // ms for auto-save debounce
   const SCROLL_SYNC_DELAY = 50; // ms for scroll sync debounce
+  const LINT_DEBOUNCE_DELAY = 500; // ms for lint debounce (performance)
 
   // Scroll sync state
   let isScrollingEditor = false;
   let isScrollingPreview = false;
   let scrollSyncTimeout = null;
   let scrollSyncEnabled = false;
+
+  // Lint state
+  let lintEnabled = false;
+  let currentLintWarnings = [];
 
   // Prevent browser from trying to restore scroll positions on refresh
   if ('scrollRestoration' in history) {
@@ -86,6 +92,11 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   const mobileViewSwitcher = document.getElementById('mobileViewSwitcher');
   const viewTabs = mobileViewSwitcher ? mobileViewSwitcher.querySelectorAll('.view-tab') : [];
   const scrollSyncToggle = document.getElementById('scrollSyncToggle');
+  const lintToggle = document.getElementById('lintToggle');
+  const lintCount = document.getElementById('lintCount');
+  const lintPanel = document.getElementById('lintPanel');
+  const lintList = document.getElementById('lintList');
+  const lineGutter = document.getElementById('lineGutter');
   const html = document.documentElement;
 
   // Mobile breakpoint
@@ -294,6 +305,108 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     }
   }
 
+  /**
+   * Update line number gutter with line numbers and error indicators
+   */
+  function updateLineGutter() {
+    if (!lineGutter) return;
+
+    const content = editor.value;
+    const lines = content.split('\n');
+    const lineCount = lines.length;
+
+    // Get lines with errors and their messages
+    const errorMap = new Map();
+    if (lintEnabled && currentLintWarnings.length > 0) {
+      currentLintWarnings.forEach((w) => {
+        const existing = errorMap.get(w.line);
+        if (existing) {
+          errorMap.set(w.line, existing + '\n' + w.message);
+        } else {
+          errorMap.set(w.line, w.message);
+        }
+      });
+    }
+
+    // Build gutter HTML - SVG warning icon for consistent sizing
+    const warningSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+
+    let gutterHTML = '';
+    for (let i = 1; i <= lineCount; i++) {
+      const errorMsg = errorMap.get(i);
+      const hasError = !!errorMsg;
+      gutterHTML += `<div class="line-number${hasError ? ' has-error' : ''}">`;
+      if (hasError) {
+        // Escape for data attribute and add tabindex for mobile focus
+        const escapedMsg = errorMsg
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        gutterHTML += `<span class="line-error-icon" data-tooltip="${escapedMsg}" tabindex="0">${warningSvg}</span>`;
+      }
+      gutterHTML += `<span class="line-number-text">${i}</span></div>`;
+    }
+
+    lineGutter.innerHTML = gutterHTML;
+
+    // Setup tooltip handlers for error icons
+    setupGutterTooltips();
+  }
+
+  // Tooltip element (created once and reused)
+  let gutterTooltip = null;
+
+  function getGutterTooltip() {
+    if (!gutterTooltip) {
+      gutterTooltip = document.createElement('div');
+      gutterTooltip.className = 'gutter-tooltip';
+      document.body.appendChild(gutterTooltip);
+    }
+    return gutterTooltip;
+  }
+
+  function showGutterTooltip(icon) {
+    const tooltip = getGutterTooltip();
+    const message = icon.getAttribute('data-tooltip');
+    if (!message) return;
+
+    tooltip.textContent = message;
+    tooltip.classList.add('visible');
+
+    // Position tooltip to the right of the icon
+    const rect = icon.getBoundingClientRect();
+    tooltip.style.left = `${rect.right + 8}px`;
+    tooltip.style.top = `${rect.top + rect.height / 2}px`;
+    tooltip.style.transform = 'translateY(-50%)';
+  }
+
+  function hideGutterTooltip() {
+    if (gutterTooltip) {
+      gutterTooltip.classList.remove('visible');
+    }
+  }
+
+  function setupGutterTooltips() {
+    if (!lineGutter) return;
+
+    const icons = lineGutter.querySelectorAll('.line-error-icon');
+    icons.forEach((icon) => {
+      icon.addEventListener('mouseenter', () => showGutterTooltip(icon));
+      icon.addEventListener('mouseleave', hideGutterTooltip);
+      icon.addEventListener('focus', () => showGutterTooltip(icon));
+      icon.addEventListener('blur', hideGutterTooltip);
+    });
+  }
+
+  /**
+   * Sync line gutter scroll with editor scroll
+   */
+  function syncGutterScroll() {
+    if (lineGutter && editor) {
+      lineGutter.scrollTop = editor.scrollTop;
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Auto-Save Functionality
   // ═══════════════════════════════════════════════════════════════
@@ -474,6 +587,296 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // Markdown Linting
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Lint rules - each returns an array of {line, message} warnings
+   */
+  const LINT_RULES = [
+    // MD009: Trailing spaces
+    {
+      id: 'MD009',
+      name: 'Trailing spaces',
+      check: (lines) => {
+        const warnings = [];
+        lines.forEach((line, i) => {
+          if (/[ \t]+$/.test(line) && !/  $/.test(line)) {
+            // Allow exactly 2 trailing spaces (line break)
+            warnings.push({ line: i + 1, message: 'Trailing spaces' });
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD010: Hard tabs
+    {
+      id: 'MD010',
+      name: 'Hard tabs',
+      check: (lines) => {
+        const warnings = [];
+        lines.forEach((line, i) => {
+          if (/\t/.test(line)) {
+            warnings.push({ line: i + 1, message: 'Hard tabs used instead of spaces' });
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD012: Multiple consecutive blank lines
+    {
+      id: 'MD012',
+      name: 'Multiple blank lines',
+      check: (lines) => {
+        const warnings = [];
+        let blankCount = 0;
+        lines.forEach((line, i) => {
+          if (line.trim() === '') {
+            blankCount++;
+            if (blankCount > 1) {
+              warnings.push({ line: i + 1, message: 'Multiple consecutive blank lines' });
+            }
+          } else {
+            blankCount = 0;
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD018: No space after hash on heading
+    {
+      id: 'MD018',
+      name: 'No space after hash',
+      check: (lines) => {
+        const warnings = [];
+        lines.forEach((line, i) => {
+          if (/^#{1,6}[^#\s]/.test(line.trim())) {
+            warnings.push({ line: i + 1, message: 'No space after hash on heading' });
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD022: Headings should be surrounded by blank lines
+    {
+      id: 'MD022',
+      name: 'Heading blank lines',
+      check: (lines) => {
+        const warnings = [];
+        lines.forEach((line, i) => {
+          if (/^#{1,6}\s/.test(line.trim())) {
+            // Check line before (if exists and not first line)
+            if (i > 0 && lines[i - 1].trim() !== '') {
+              warnings.push({ line: i + 1, message: 'Heading should have blank line before' });
+            }
+            // Check line after (if exists and not last line)
+            if (i < lines.length - 1 && lines[i + 1].trim() !== '') {
+              warnings.push({ line: i + 1, message: 'Heading should have blank line after' });
+            }
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD047: File should end with newline
+    {
+      id: 'MD047',
+      name: 'End with newline',
+      check: (lines, content) => {
+        if (content.length > 0 && !content.endsWith('\n')) {
+          return [{ line: lines.length, message: 'File should end with newline' }];
+        }
+        return [];
+      },
+    },
+    // MD037: Spaces inside emphasis markers (single * or _)
+    // Matches: * text * or _ text _ (with spaces inside)
+    // But NOT: **bold** or list items like "- * text"
+    {
+      id: 'MD037',
+      name: 'Spaces in emphasis',
+      check: (lines) => {
+        const warnings = [];
+        lines.forEach((line, i) => {
+          // Match single * or _ with spaces inside, not ** or __
+          // Pattern: single * not preceded by *, followed by space, content, space, single * not followed by *
+          if (/(?<!\*)\*\s+[^*]+\s+\*(?!\*)/.test(line) || /(?<!_)_\s+[^_]+\s+_(?!_)/.test(line)) {
+            warnings.push({ line: i + 1, message: 'Spaces inside emphasis markers' });
+          }
+        });
+        return warnings;
+      },
+    },
+    // MD041: First line should be a top-level heading
+    {
+      id: 'MD041',
+      name: 'First line heading',
+      check: (lines) => {
+        // Find first non-empty line
+        const firstNonEmpty = lines.find((line) => line.trim() !== '');
+        if (firstNonEmpty && !/^#\s/.test(firstNonEmpty)) {
+          const lineNum = lines.indexOf(firstNonEmpty) + 1;
+          return [{ line: lineNum, message: 'First line should be a top-level heading' }];
+        }
+        return [];
+      },
+    },
+  ];
+
+  /**
+   * Run all lint rules against the content
+   */
+  function runLinter(content) {
+    const lines = content.split('\n');
+    const allWarnings = [];
+
+    LINT_RULES.forEach((rule) => {
+      const warnings = rule.check(lines, content);
+      warnings.forEach((w) => {
+        allWarnings.push({
+          line: w.line,
+          message: `${rule.id}: ${w.message}`,
+          ruleId: rule.id,
+        });
+      });
+    });
+
+    // Sort by line number
+    allWarnings.sort((a, b) => a.line - b.line);
+    return allWarnings;
+  }
+
+  /**
+   * Update lint UI with warnings
+   */
+  function updateLintUI(warnings) {
+    currentLintWarnings = warnings;
+
+    // Update toggle button
+    if (lintToggle) {
+      if (warnings.length > 0) {
+        lintToggle.classList.add('has-warnings');
+      } else {
+        lintToggle.classList.remove('has-warnings');
+      }
+    }
+
+    // Update count
+    if (lintCount) {
+      lintCount.textContent = warnings.length > 0 ? warnings.length : '';
+    }
+
+    // Update panel
+    if (lintList) {
+      lintList.innerHTML = '';
+      if (warnings.length === 0 && lintEnabled) {
+        const li = document.createElement('li');
+        li.className = 'lint-item';
+        li.innerHTML = `
+          <span class="lint-item-icon" style="color: var(--link-color)">✓</span>
+          <span class="lint-item-message" style="color: var(--text-muted)">No issues found</span>
+        `;
+        lintList.appendChild(li);
+      } else {
+        warnings.forEach((warning) => {
+          const li = document.createElement('li');
+          li.className = 'lint-item';
+          li.innerHTML = `
+            <span class="lint-item-icon">⚠</span>
+            <span class="lint-item-line">L${warning.line}</span>
+            <span class="lint-item-message">${warning.message}</span>
+          `;
+          li.addEventListener('click', () => scrollToLine(warning.line));
+          lintList.appendChild(li);
+        });
+      }
+    }
+
+    // Show/hide panel
+    if (lintPanel && lintEnabled) {
+      lintPanel.classList.add('visible');
+    }
+
+    // Update line gutter to show error indicators
+    updateLineGutter();
+  }
+
+  /**
+   * Scroll editor to a specific line
+   */
+  function scrollToLine(lineNumber) {
+    if (!editor) return;
+
+    const lines = editor.value.split('\n');
+    let charIndex = 0;
+
+    for (let i = 0; i < lineNumber - 1 && i < lines.length; i++) {
+      charIndex += lines[i].length + 1; // +1 for newline
+    }
+
+    editor.focus();
+    editor.setSelectionRange(charIndex, charIndex);
+
+    // Calculate approximate scroll position
+    const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 24;
+    const targetScroll = (lineNumber - 1) * lineHeight - editor.clientHeight / 3;
+    editor.scrollTop = Math.max(0, targetScroll);
+  }
+
+  /**
+   * Toggle lint on/off
+   */
+  function toggleLint() {
+    lintEnabled = !lintEnabled;
+    setStorageItem(STORAGE_KEYS.LINT_ENABLED, lintEnabled ? 'true' : 'false');
+
+    if (lintToggle) {
+      if (lintEnabled) {
+        lintToggle.classList.add('active');
+        lintToggle.title = 'Lint markdown (on)';
+        // Run linter immediately
+        const warnings = runLinter(editor.value);
+        updateLintUI(warnings);
+      } else {
+        lintToggle.classList.remove('active');
+        lintToggle.classList.remove('has-warnings');
+        lintToggle.title = 'Lint markdown (off)';
+        if (lintCount) lintCount.textContent = '';
+        if (lintPanel) lintPanel.classList.remove('visible');
+        currentLintWarnings = []; // Clear warnings
+        updateLineGutter(); // Remove error icons from gutter
+      }
+      lintToggle.setAttribute('aria-pressed', lintEnabled ? 'true' : 'false');
+    }
+  }
+
+  /**
+   * Load saved lint preference
+   */
+  function loadLintPreference() {
+    const savedState = getStorageItem(STORAGE_KEYS.LINT_ENABLED);
+    lintEnabled = savedState === 'true';
+
+    if (lintToggle) {
+      if (lintEnabled) {
+        lintToggle.classList.add('active');
+        lintToggle.title = 'Lint markdown (on)';
+      } else {
+        lintToggle.classList.remove('active');
+        lintToggle.title = 'Lint markdown (off)';
+      }
+      lintToggle.setAttribute('aria-pressed', lintEnabled ? 'true' : 'false');
+    }
+  }
+
+  // Debounced lint function for input handler
+  const debouncedLint = debounce((content) => {
+    if (!lintEnabled) return;
+    const warnings = runLinter(content);
+    updateLintUI(warnings);
+  }, LINT_DEBOUNCE_DELAY);
+
+  // ═══════════════════════════════════════════════════════════════
   // Resize Functionality
   // ═══════════════════════════════════════════════════════════════
 
@@ -644,7 +1047,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     // Live preview on input
     editor.addEventListener('input', () => {
       updatePreview();
+      updateLineGutter();
       debouncedSave();
+      debouncedLint(editor.value);
     });
 
     // Theme toggle
@@ -695,6 +1100,11 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       scrollSyncToggle.addEventListener('click', toggleScrollSync);
     }
 
+    // Lint toggle
+    if (lintToggle) {
+      lintToggle.addEventListener('click', toggleLint);
+    }
+
     // Mobile view switcher
     viewTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
@@ -711,6 +1121,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
 
     // Scroll sync event listeners (only on desktop)
     editor.addEventListener('scroll', () => {
+      syncGutterScroll();
       if (!isMobile()) {
         throttledSyncEditorToPreview();
       }
@@ -736,11 +1147,19 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     loadCollapseState();
     loadEditorWidth();
     loadScrollSyncPreference();
+    loadLintPreference();
     loadContent();
+    updateLineGutter(); // Initial line numbers
     resetPaneScrollPositions();
     normalizeEditorPosition();
     setupEventListeners();
     initMobileView();
+
+    // Run initial lint if enabled
+    if (lintEnabled) {
+      const warnings = runLinter(editor.value);
+      updateLintUI(warnings);
+    }
   }
 
   // Start the app when DOM is ready

@@ -271,6 +271,121 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Lint Toggle & Panel
+   ───────────────────────────────────────────────────────────────── */
+.lint-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.lint-toggle:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.lint-toggle.active {
+  color: var(--text-primary);
+}
+
+.lint-toggle.active.has-warnings {
+  color: #d97706; /* Amber-600 */
+}
+
+[data-theme='dark'] .lint-toggle.active.has-warnings {
+  color: #fbbf24; /* Amber-400 */
+}
+
+.lint-toggle.active:not(.has-warnings) {
+  color: #16a34a; /* Green-600 */
+}
+
+[data-theme='dark'] .lint-toggle.active:not(.has-warnings) {
+  color: #4ade80; /* Green-400 */
+}
+
+.lint-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  min-width: 1rem;
+  text-align: center;
+}
+
+.lint-count:empty {
+  display: none;
+}
+
+/* Lint Panel */
+.lint-panel {
+  display: none;
+  max-height: 120px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+}
+
+.lint-panel.visible {
+  display: block;
+}
+
+.lint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lint-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.15s ease;
+}
+
+.lint-item:last-child {
+  border-bottom: none;
+}
+
+.lint-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.lint-item-icon {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .lint-item-icon {
+  color: #fbbf24;
+}
+
+.lint-item-line {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lint-item-message {
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Main Container
    ───────────────────────────────────────────────────────────────── */
 .editor-container {
@@ -421,12 +536,107 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Editor Input
+   Editor Input with Line Gutter
    ───────────────────────────────────────────────────────────────── */
+.editor-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  z-index: 1; /* Create stacking context */
+}
+
+.line-gutter {
+  flex-shrink: 0;
+  width: 3.5rem;
+  padding: 1rem 0.5rem 2rem 0.75rem;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  text-align: right;
+  user-select: none;
+  overflow: visible; /* Allow tooltip to escape */
+  position: relative;
+  z-index: 10; /* Above editor content for tooltips */
+}
+
+.line-number {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  height: calc(0.9rem * 1.7); /* Match editor line-height */
+}
+
+.line-number-text {
+  min-width: 1.5rem;
+}
+
+.line-error-icon {
+  width: 14px;
+  height: 14px;
+  color: #d97706; /* Amber-600 */
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.line-error-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+[data-theme='dark'] .line-error-icon {
+  color: #fbbf24; /* Amber-400 */
+}
+
+/* JS-controlled Tooltip (appended to body to escape overflow) */
+.gutter-tooltip {
+  position: fixed;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  white-space: pre-line;
+  max-width: 300px;
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+}
+
+.gutter-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.line-error-icon:focus {
+  outline: none;
+}
+
+.line-number.has-error {
+  color: #d97706;
+}
+
+[data-theme='dark'] .line-number.has-error {
+  color: #fbbf24;
+}
+
 .editor {
   flex: 1;
   width: 100%;
-  padding: 1rem 1.5rem 2rem;
+  padding: 1rem 1.5rem 2rem 1rem;
   border: none;
   background: transparent;
   color: var(--text-primary);
