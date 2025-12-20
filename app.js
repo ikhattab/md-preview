@@ -338,18 +338,28 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     // Re-initialize mermaid with current theme
     initMermaid();
 
-    for (const diagram of diagrams) {
-      const id = diagram.id;
-      const code = diagram.textContent;
+    // Use mermaid.run() for batch rendering (mermaid v10+/v11 API)
+    try {
+      await mermaid.run({
+        nodes: diagrams,
+        suppressErrors: false,
+      });
+      // Mark all as rendered
+      diagrams.forEach((d) => d.classList.add('mermaid-rendered'));
+    } catch (_e) {
+      // If batch fails, try individual rendering with fallback
+      for (const diagram of diagrams) {
+        const id = diagram.id;
+        const code = diagram.textContent;
 
-      try {
-        const { svg } = await mermaid.render(id + '-svg', code);
-        diagram.innerHTML = svg;
-        diagram.classList.add('mermaid-rendered');
-      } catch (e) {
-        // Show error message in the diagram container
-        diagram.innerHTML = `<div class="mermaid-error">Mermaid syntax error: ${e.message || 'Invalid diagram'}</div>`;
-        diagram.classList.add('mermaid-error-container');
+        try {
+          const { svg } = await mermaid.render(id + '-svg', code);
+          diagram.innerHTML = svg;
+          diagram.classList.add('mermaid-rendered');
+        } catch (renderError) {
+          diagram.innerHTML = `<div class="mermaid-error">Mermaid syntax error: ${renderError.message || 'Invalid diagram'}</div>`;
+          diagram.classList.add('mermaid-error-container');
+        }
       }
     }
   }
@@ -1231,6 +1241,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
 
   function init() {
     configureMarked();
+    initMermaid(); // Initialize mermaid before first render
     loadTheme();
     loadCollapseState();
     loadEditorWidth();

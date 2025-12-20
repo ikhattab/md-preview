@@ -49,7 +49,7 @@ export default [
       // Variables
       'no-shadow': 'error',
       'no-undef': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-use-before-define': ['error', { functions: false }],
 
       // Stylistic (handled by Prettier, but keeping some semantic ones)
