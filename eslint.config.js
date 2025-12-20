@@ -19,6 +19,7 @@ export default [
         ...globals.browser,
         marked: 'readonly',
         hljs: 'readonly',
+        mermaid: 'readonly',
       },
     },
     rules: {

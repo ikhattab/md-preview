@@ -885,3 +885,45 @@ textarea:focus:not(:focus-visible) {
     max-width: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Mermaid Diagrams
+   ───────────────────────────────────────────────────────────────── */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5em 0;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  color: #dc2626;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+[data-theme='dark'] .mermaid-error {
+  color: #f87171;
+}
+
+.mermaid-error-container {
+  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+[data-theme='dark'] .mermaid-error-container {
+  background: rgba(248, 113, 113, 0.05);
+  border-color: rgba(248, 113, 113, 0.2);
+}

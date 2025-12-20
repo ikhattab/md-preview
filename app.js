@@ -49,6 +49,7 @@ Start typing your **markdown** in the editor, and watch it transform into beauti
 - 💾 **Auto-Save** — Never lose your work
 - 🔒 **100% Private** — Everything stays in your browser
 - 🔗 **Scroll Sync** — Click the link icon in header to sync scrolling
+- 📊 **Mermaid Diagrams** — Create flowcharts and diagrams
 
 ## Try Some Markdown
 
@@ -57,6 +58,17 @@ Start typing your **markdown** in the editor, and watch it transform into beauti
 \`\`\`javascript
 const greeting = "Hello, Markdown!";
 console.log(greeting);
+\`\`\`
+
+### Mermaid Diagrams
+
+\`\`\`mermaid
+graph LR
+    A[Write Markdown] --> B{Preview}
+    B --> C[Dark Mode]
+    B --> D[Light Mode]
+    C --> E[Beautiful Output]
+    D --> E
 \`\`\`
 
 ### Blockquotes
@@ -256,6 +268,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   // Markdown Parsing & Preview
   // ═══════════════════════════════════════════════════════════════
 
+  // Counter for unique mermaid diagram IDs
+  let mermaidCounter = 0;
+
   /**
    * Configure marked.js options with syntax highlighting
    */
@@ -268,6 +283,12 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         // Handle the case where code is an object (newer marked versions)
         const codeText = typeof code === 'object' ? code.text : code;
         const lang = typeof code === 'object' ? code.lang : language;
+
+        // Handle mermaid diagrams
+        if (lang === 'mermaid') {
+          const id = `mermaid-${mermaidCounter++}`;
+          return `<div class="mermaid" id="${id}">${codeText}</div>`;
+        }
 
         if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
           try {
@@ -292,13 +313,60 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   }
 
   /**
+   * Initialize mermaid with theme based on current theme
+   */
+  function initMermaid() {
+    if (typeof mermaid !== 'undefined') {
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDark ? 'dark' : 'default',
+        securityLevel: 'loose',
+      });
+    }
+  }
+
+  /**
+   * Render mermaid diagrams in the preview
+   */
+  async function renderMermaidDiagrams() {
+    if (typeof mermaid === 'undefined') return;
+
+    const diagrams = preview.querySelectorAll('.mermaid:not(.mermaid-rendered)');
+    if (diagrams.length === 0) return;
+
+    // Re-initialize mermaid with current theme
+    initMermaid();
+
+    for (const diagram of diagrams) {
+      const id = diagram.id;
+      const code = diagram.textContent;
+
+      try {
+        const { svg } = await mermaid.render(id + '-svg', code);
+        diagram.innerHTML = svg;
+        diagram.classList.add('mermaid-rendered');
+      } catch (e) {
+        // Show error message in the diagram container
+        diagram.innerHTML = `<div class="mermaid-error">Mermaid syntax error: ${e.message || 'Invalid diagram'}</div>`;
+        diagram.classList.add('mermaid-error-container');
+      }
+    }
+  }
+
+  /**
    * Render markdown to HTML and update preview
    */
   function updatePreview() {
     const markdownText = editor.value;
 
+    // Reset mermaid counter for consistent IDs
+    mermaidCounter = 0;
+
     if (typeof marked !== 'undefined') {
       preview.innerHTML = marked.parse(markdownText);
+      // Render any mermaid diagrams
+      renderMermaidDiagrams();
     } else {
       // Fallback if marked.js hasn't loaded yet
       preview.innerHTML = `<p>${markdownText.replace(/\n/g, '<br>')}</p>`;
@@ -471,6 +539,9 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         hljsDark.disabled = true;
       }
     }
+
+    // Re-render mermaid diagrams with new theme
+    renderMermaidDiagrams();
   }
 
   /**
