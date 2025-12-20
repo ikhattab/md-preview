@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "npx serve -l 3000",
+    "build": "rm -rf dist && mkdir -p dist && cp index.html app.js styles.css robots.txt sitemap.xml site.webmanifest favicon.ico favicon.svg favicon-96x96.png apple-touch-icon.png og-image.png web-app-manifest-*.png dist/",
+    "preview": "npx serve dist -l 3000",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
