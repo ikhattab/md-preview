@@ -6,7 +6,7 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 
 - Live markdown preview powered by `marked` with syntax highlighting via `highlight.js`
 - Light/dark theme toggle with Highlight.js theme switching
-- Local auto-save (content, theme, pane width, and collapse state stored in `localStorage`)
+- Local auto-save (content, theme, pane width, and collapse state stored in `localStorage` on your device only)
 - Resizable split panes and collapsible editor for focused reading
 - Responsive layout and sensible defaults with a rich starter document
 
@@ -61,5 +61,5 @@ fly deploy
 
 ### Notes
 
-- All data stays in the browser; nothing is sent to a backend.
+- All data stays on your device in the browser; nothing is sent to a backend or third party.
 - If `localStorage` is unavailable, the app still works but won’t persist settings/content.
