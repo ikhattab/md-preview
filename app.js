@@ -48,8 +48,11 @@ Start typing your **markdown** in the editor, and watch it transform into beauti
 - 🌓 **Dark & Light Modes** — Easy on your eyes
 - 💾 **Auto-Save** — Your work is saved locally on this device
 - 🔒 **100% Private** — Nothing leaves your browser
-- 🔗 **Scroll Sync** — Click the link icon in header to sync scrolling
-- 📊 **Mermaid Diagrams** — Create flowcharts and diagrams
+- 🔗 **Scroll Sync** — Click the link icon in the header to sync scrolling
+- ⚠️ **Markdown Lint** — Toggle the warning icon to catch style issues
+- ∑ **Math (KaTeX)** — Inline and block LaTeX equations
+- 📊 **Mermaid Diagrams** — Flowcharts with copy/download as PNG
+- 🖼️ **Images & Tables** — Rich content with syntax highlighting and copy buttons
 
 ## Try Some Markdown
 
@@ -59,6 +62,16 @@ Start typing your **markdown** in the editor, and watch it transform into beauti
 const greeting = "Hello, Markdown!";
 console.log(greeting);
 \`\`\`
+
+### Math
+
+Inline math: $a^2 + b^2 = c^2$
+
+Block equation:
+
+$$
+f(x) = \\int_{-\\infty}^{\\infty} \\hat{f}(\\xi)\\, e^{2 \\pi i \\xi x}\\, d\\xi
+$$
 
 ### Mermaid Diagrams
 
@@ -71,6 +84,22 @@ graph LR
     D --> E
 \`\`\`
 
+### Images
+
+![Sample landscape](https://placehold.co/800x320/e7dfd0/6b6256?text=mdfor.work)
+
+### Tables
+
+| Feature        | Supported |
+| -------------- | --------- |
+| Bold / *italic* | ✅        |
+| ~~Strikethrough~~ | ✅      |
+| Task lists     | ✅        |
+
+### Text Formatting
+
+**Bold**, *italic*, ~~strikethrough~~, <mark>highlighted</mark>, \`inline code\`, and keyboard shortcuts like <kbd>Cmd</kbd> + <kbd>S</kbd>.
+
 ### Blockquotes
 
 > "The best writing is rewriting."
@@ -78,13 +107,17 @@ graph LR
 
 ### Lists
 
-1. First item
-2. Second item
-3. Third item
+1. Ordered lists
+2. Work great
+3. Out of the box
+
+- Unordered lists too
+- [x] Task lists are supported
+- [ ] Try checking this in preview
 
 ### Links
 
-Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
+Check out the [Markdown Guide](https://www.markdownguide.org) to learn more.
 
 ---
 
@@ -289,8 +322,26 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
    */
   function configureMarked() {
     if (typeof marked !== 'undefined') {
+      if (typeof markedKatex !== 'undefined') {
+        marked.use(
+          markedKatex({
+            throwOnError: false,
+            nonStandard: true,
+          })
+        );
+      }
+
       // Create a custom renderer for code blocks with Highlight.js
       const renderer = new marked.Renderer();
+
+      renderer.image = function (token) {
+        const { href, title, text } = token;
+        if (!href) {
+          return text ? escapeHtml(text) : '';
+        }
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<img src="${escapeHtml(href)}" alt="${escapeHtml(text || '')}"${titleAttr} loading="lazy" decoding="async">`;
+      };
 
       renderer.code = function (code, language) {
         // Handle the case where code is an object (newer marked versions)
@@ -587,6 +638,18 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
    * Post-process preview HTML: table wrappers, code copy buttons
    */
   function postProcessPreview() {
+    preview.querySelectorAll('img').forEach((img) => {
+      if (img.dataset.errorBound) return;
+      img.dataset.errorBound = 'true';
+      img.addEventListener('error', () => {
+        img.classList.add('img-load-error');
+        const fallback = document.createElement('span');
+        fallback.className = 'img-load-error-msg';
+        fallback.textContent = `Image failed to load: ${img.getAttribute('src') || 'unknown URL'}`;
+        img.insertAdjacentElement('afterend', fallback);
+      });
+    });
+
     preview.querySelectorAll('table').forEach((table) => {
       if (table.parentElement?.classList.contains('table-wrap')) return;
       const wrap = document.createElement('div');
