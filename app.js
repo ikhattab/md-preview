@@ -1,6 +1,6 @@
 /**
  * MD Preview — Application Logic
- * Instant live markdown preview with auto-save and theme switching
+ * Instant live markdown preview with local auto-save and theme switching
  */
 
 (function () {
@@ -46,8 +46,8 @@ Start typing your **markdown** in the editor, and watch it transform into beauti
 
 - 📝 **Live Preview** — See your changes in real-time
 - 🌓 **Dark & Light Modes** — Easy on your eyes
-- 💾 **Auto-Save** — Never lose your work
-- 🔒 **100% Private** — Everything stays in your browser
+- 💾 **Auto-Save** — Your work is saved locally on this device
+- 🔒 **100% Private** — Nothing leaves your browser
 - 🔗 **Scroll Sync** — Click the link icon in header to sync scrolling
 - 📊 **Mermaid Diagrams** — Create flowcharts and diagrams
 
@@ -754,7 +754,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // Auto-Save Functionality
+  // Auto-Save Functionality (localStorage only — never sent off-device)
   // ═══════════════════════════════════════════════════════════════
 
   /**
