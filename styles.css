@@ -705,6 +705,10 @@ textarea:focus:not(:focus-visible) {
   margin: 0 auto;
 }
 
+.prose > :first-child {
+  margin-top: 0;
+}
+
 .prose h1,
 .prose h2,
 .prose h3,
@@ -774,7 +778,15 @@ textarea:focus:not(:focus-visible) {
   padding-left: 1.25rem;
   margin: 1.5em 0;
   color: var(--text-secondary);
-  font-style: italic;
+}
+
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.prose blockquote blockquote {
+  margin-top: 0.75em;
+  margin-bottom: 0;
 }
 
 .prose hr {
@@ -793,10 +805,150 @@ textarea:focus:not(:focus-visible) {
   margin-bottom: 0.5em;
 }
 
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+.prose ul.contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose li.task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  list-style: none;
+  margin-left: 0;
+}
+
+.prose li.task-list-item input[type='checkbox'] {
+  margin-top: 0.35em;
+  flex-shrink: 0;
+  accent-color: var(--link-color);
+  cursor: default;
+}
+
+.prose del {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.prose kbd {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--border-color);
+  border-bottom-width: 2px;
+  border-radius: 0.25rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.prose mark {
+  background: rgba(250, 204, 21, 0.35);
+  color: inherit;
+  padding: 0.1em 0.2em;
+  border-radius: 0.15rem;
+}
+
+[data-theme='dark'] .prose mark {
+  background: rgba(250, 204, 21, 0.2);
+}
+
+.prose sub,
+.prose sup {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
 .prose img {
+  display: block;
   max-width: 100%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
   border-radius: 0.5rem;
   border: 1px solid var(--border-color);
+}
+
+/* Tables */
+.prose .table-wrap {
+  overflow-x: auto;
+  margin: 1.5em 0;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.925em;
+  line-height: 1.5;
+}
+
+.prose thead {
+  background: var(--bg-secondary);
+}
+
+.prose th,
+.prose td {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+
+.prose th {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.prose tbody tr:nth-child(even) {
+  background: var(--bg-secondary);
+}
+
+.prose tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Code block copy button */
+.prose pre.code-block-with-copy {
+  position: relative;
+}
+
+.prose .code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.prose pre:hover .code-copy-btn,
+.prose pre:focus-within .code-copy-btn,
+.prose .code-copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.prose .code-copy-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -890,6 +1042,7 @@ textarea:focus:not(:focus-visible) {
    Mermaid Diagrams
    ───────────────────────────────────────────────────────────────── */
 .mermaid {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -901,9 +1054,51 @@ textarea:focus:not(:focus-visible) {
   overflow-x: auto;
 }
 
+.mermaid.mermaid-has-toolbar {
+  padding-top: 2.5rem;
+}
+
 .mermaid svg {
   max-width: 100%;
   height: auto;
+}
+
+.mermaid-toolbar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.mermaid:hover .mermaid-toolbar,
+.mermaid:focus-within .mermaid-toolbar {
+  opacity: 1;
+}
+
+.mermaid-btn {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.mermaid-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.mermaid-btn:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
 }
 
 .mermaid-error {
@@ -926,4 +1121,34 @@ textarea:focus:not(:focus-visible) {
 [data-theme='dark'] .mermaid-error-container {
   background: rgba(248, 113, 113, 0.05);
   border-color: rgba(248, 113, 113, 0.2);
+}
+
+/* Toast notifications */
+.md-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.md-toast.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }

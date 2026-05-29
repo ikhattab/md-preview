@@ -134,6 +134,17 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   }
 
   /**
+   * Escape HTML for safe insertion into the DOM
+   */
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /**
    * Throttle function to limit how often a function is called
    */
   function throttle(func, limit) {
@@ -270,6 +281,8 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
 
   // Counter for unique mermaid diagram IDs
   let mermaidCounter = 0;
+  const PNG_SCALE = 3;
+  let toastTimeout = null;
 
   /**
    * Configure marked.js options with syntax highlighting
@@ -287,7 +300,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         // Handle mermaid diagrams
         if (lang === 'mermaid') {
           const id = `mermaid-${mermaidCounter++}`;
-          return `<div class="mermaid" id="${id}">${codeText}</div>`;
+          return `<div class="mermaid" id="${id}">${escapeHtml(codeText)}</div>`;
         }
 
         if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
@@ -322,7 +335,215 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         startOnLoad: false,
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'loose',
+        fontFamily:
+          '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        htmlLabels: false,
+        flowchart: {
+          htmlLabels: false,
+          useMaxWidth: true,
+        },
       });
+    }
+  }
+
+  /**
+   * Stash mermaid source on each diagram node before first render
+   */
+  function stashMermaidSource(diagramEl) {
+    if (!diagramEl.dataset.mermaidSource) {
+      diagramEl.dataset.mermaidSource = diagramEl.textContent.trim();
+    }
+  }
+
+  /**
+   * Reset mermaid diagrams so they can be re-rendered (e.g. theme change)
+   */
+  function prepareMermaidForRerender() {
+    preview.querySelectorAll('.mermaid').forEach((el) => {
+      if (!el.dataset.mermaidSource) return;
+      el.textContent = el.dataset.mermaidSource;
+      el.classList.remove('mermaid-rendered', 'mermaid-error-container', 'mermaid-has-toolbar');
+      const toolbar = el.querySelector('.mermaid-toolbar');
+      if (toolbar) toolbar.remove();
+    });
+  }
+
+  /**
+   * Show a brief toast notification
+   */
+  function showToast(message) {
+    let toast = document.getElementById('mdToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'mdToast';
+      toast.className = 'md-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('visible');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('visible'), 2500);
+  }
+
+  /**
+   * Convert a rendered mermaid SVG to a high-res PNG blob
+   */
+  async function mermaidSvgToPngBlob(diagramEl) {
+    const svg = diagramEl.querySelector('svg');
+    if (!svg) throw new Error('No diagram rendered');
+
+    const cloned = svg.cloneNode(true);
+    cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+    const viewBox = svg.viewBox?.baseVal;
+    let width =
+      viewBox?.width || parseFloat(svg.getAttribute('width')) || svg.clientWidth || 0;
+    let height =
+      viewBox?.height || parseFloat(svg.getAttribute('height')) || svg.clientHeight || 0;
+
+    if (!width || !height) {
+      const bbox = svg.getBBox();
+      width = bbox.width || 800;
+      height = bbox.height || 600;
+    }
+
+    cloned.setAttribute('width', String(width));
+    cloned.setAttribute('height', String(height));
+    if (!cloned.getAttribute('viewBox')) {
+      cloned.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    }
+
+    const svgString = new XMLSerializer().serializeToString(cloned);
+    const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Failed to load SVG'));
+      img.src = svgUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(width * PNG_SCALE);
+    canvas.height = Math.ceil(height * PNG_SCALE);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(PNG_SCALE, PNG_SCALE);
+    ctx.drawImage(img, 0, 0, width, height);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to create PNG'));
+      }, 'image/png');
+    });
+  }
+
+  /**
+   * Copy or download a mermaid diagram as PNG
+   */
+  async function exportMermaidPng(diagramEl, mode) {
+    try {
+      const blob = await mermaidSvgToPngBlob(diagramEl);
+      const id = diagramEl.id || 'diagram';
+
+      if (mode === 'download') {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Downloaded PNG');
+        return;
+      }
+
+      if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        showToast('Copied PNG');
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Clipboard unavailable — downloaded instead');
+      }
+    } catch (err) {
+      console.warn('Mermaid PNG export failed:', err);
+      showToast('Export failed');
+    }
+  }
+
+  /**
+   * Attach copy/download toolbar to a rendered mermaid diagram
+   */
+  function attachMermaidToolbar(diagramEl) {
+    if (diagramEl.querySelector('.mermaid-toolbar')) return;
+    if (!diagramEl.querySelector('svg')) return;
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'mermaid-toolbar';
+    toolbar.setAttribute('role', 'toolbar');
+    toolbar.setAttribute('aria-label', 'Diagram export');
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'mermaid-btn';
+    copyBtn.textContent = 'Copy PNG';
+    copyBtn.setAttribute('aria-label', 'Copy diagram as PNG');
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMermaidPng(diagramEl, 'copy');
+    });
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.type = 'button';
+    downloadBtn.className = 'mermaid-btn';
+    downloadBtn.textContent = 'Download PNG';
+    downloadBtn.setAttribute('aria-label', 'Download diagram as PNG');
+    downloadBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMermaidPng(diagramEl, 'download');
+    });
+
+    toolbar.append(copyBtn, downloadBtn);
+    diagramEl.classList.add('mermaid-has-toolbar');
+    diagramEl.appendChild(toolbar);
+  }
+
+  /**
+   * Mark a diagram as failed and show an error message
+   */
+  function showMermaidError(diagram, renderError) {
+    const msg = renderError?.message || 'Invalid diagram';
+    diagram.innerHTML = `<div class="mermaid-error">Mermaid syntax error: ${escapeHtml(msg)}</div>`;
+    diagram.classList.add('mermaid-rendered', 'mermaid-error-container');
+  }
+
+  /**
+   * Render a single mermaid diagram with fallback error handling
+   */
+  async function renderSingleMermaidDiagram(diagram) {
+    stashMermaidSource(diagram);
+    const id = diagram.id || `mermaid-fallback-${mermaidCounter++}`;
+    const code = diagram.dataset.mermaidSource;
+
+    try {
+      const { svg } = await mermaid.render(`${id}-svg`, code);
+      diagram.innerHTML = svg;
+      diagram.classList.add('mermaid-rendered');
+      attachMermaidToolbar(diagram);
+    } catch (renderError) {
+      showMermaidError(diagram, renderError);
     }
   }
 
@@ -335,33 +556,70 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     const diagrams = preview.querySelectorAll('.mermaid:not(.mermaid-rendered)');
     if (diagrams.length === 0) return;
 
-    // Re-initialize mermaid with current theme
+    diagrams.forEach(stashMermaidSource);
+
     initMermaid();
 
-    // Use mermaid.run() for batch rendering (mermaid v10+/v11 API)
     try {
       await mermaid.run({
         nodes: diagrams,
-        suppressErrors: false,
+        suppressErrors: true,
       });
-      // Mark all as rendered
-      diagrams.forEach((d) => d.classList.add('mermaid-rendered'));
+      for (const d of diagrams) {
+        if (d.querySelector('svg')) {
+          d.classList.add('mermaid-rendered');
+          attachMermaidToolbar(d);
+        } else if (!d.classList.contains('mermaid-rendered')) {
+          await renderSingleMermaidDiagram(d);
+        }
+      }
     } catch (_e) {
-      // If batch fails, try individual rendering with fallback
       for (const diagram of diagrams) {
-        const id = diagram.id;
-        const code = diagram.textContent;
-
-        try {
-          const { svg } = await mermaid.render(id + '-svg', code);
-          diagram.innerHTML = svg;
-          diagram.classList.add('mermaid-rendered');
-        } catch (renderError) {
-          diagram.innerHTML = `<div class="mermaid-error">Mermaid syntax error: ${renderError.message || 'Invalid diagram'}</div>`;
-          diagram.classList.add('mermaid-error-container');
+        if (!diagram.classList.contains('mermaid-rendered')) {
+          await renderSingleMermaidDiagram(diagram);
         }
       }
     }
+  }
+
+  /**
+   * Post-process preview HTML: table wrappers, code copy buttons
+   */
+  function postProcessPreview() {
+    preview.querySelectorAll('table').forEach((table) => {
+      if (table.parentElement?.classList.contains('table-wrap')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    });
+
+    preview.querySelectorAll('pre').forEach((pre) => {
+      if (pre.querySelector('.code-copy-btn')) return;
+      const code = pre.querySelector('code');
+      if (!code) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy-btn';
+      btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy code');
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code.textContent);
+          showToast('Copied code');
+          btn.textContent = 'Copied';
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+          }, 2000);
+        } catch {
+          showToast('Copy failed');
+        }
+      });
+
+      pre.classList.add('code-block-with-copy');
+      pre.appendChild(btn);
+    });
   }
 
   /**
@@ -370,16 +628,26 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   function updatePreview() {
     const markdownText = editor.value;
 
-    // Reset mermaid counter for consistent IDs
     mermaidCounter = 0;
 
     if (typeof marked !== 'undefined') {
       preview.innerHTML = marked.parse(markdownText);
-      // Render any mermaid diagrams
+      postProcessPreview();
       renderMermaidDiagrams();
     } else {
-      // Fallback if marked.js hasn't loaded yet
-      preview.innerHTML = `<p>${markdownText.replace(/\n/g, '<br>')}</p>`;
+      preview.innerHTML = `<p>${escapeHtml(markdownText).replace(/\n/g, '<br>')}</p>`;
+    }
+  }
+
+  /**
+   * Switch to reading view after paste (zen on desktop, preview tab on mobile)
+   */
+  function switchToPreviewAfterPaste() {
+    if (isMobile()) {
+      setMobileView('preview');
+    } else {
+      setCollapsed(true);
+      if (preview) preview.scrollTop = 0;
     }
   }
 
@@ -551,6 +819,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     }
 
     // Re-render mermaid diagrams with new theme
+    prepareMermaidForRerender();
     renderMermaidDiagrams();
   }
 
@@ -583,30 +852,43 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
   // ═══════════════════════════════════════════════════════════════
 
   /**
+   * Set editor pane collapse state (idempotent)
+   */
+  function setCollapsed(collapsed) {
+    const isCurrentlyCollapsed = editorPane.classList.contains('collapsed');
+    if (isCurrentlyCollapsed === collapsed) return;
+
+    if (collapsed) {
+      editorPane.classList.add('collapsed');
+    } else {
+      editorPane.classList.remove('collapsed');
+    }
+
+    setStorageItem(STORAGE_KEYS.EDITOR_COLLAPSED, collapsed ? 'true' : 'false');
+
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+
+    if (resizeHandle) {
+      resizeHandle.style.display = collapsed ? 'none' : 'flex';
+    }
+
+    if (previewPane) {
+      previewPane.style.flex = collapsed ? '1 1 100%' : '1';
+    }
+
+    const app = document.querySelector('.app');
+    if (app) {
+      app.classList.toggle('zen-mode', collapsed);
+    }
+  }
+
+  /**
    * Toggle editor pane collapse state
    */
   function toggleCollapse() {
-    const isCollapsed = editorPane.classList.toggle('collapsed');
-    setStorageItem(STORAGE_KEYS.EDITOR_COLLAPSED, isCollapsed ? 'true' : 'false');
-    if (collapseBtn) {
-      collapseBtn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
-    }
-
-    // Hide resize handle and expand preview when collapsed
-    if (resizeHandle) {
-      resizeHandle.style.display = isCollapsed ? 'none' : 'flex';
-    }
-
-    // Ensure preview pane expands
-    if (previewPane) {
-      previewPane.style.flex = isCollapsed ? '1 1 100%' : '1';
-    }
-
-    // Toggle Zen Mode on app container
-    const app = document.querySelector('.app');
-    if (app) {
-      app.classList.toggle('zen-mode', isCollapsed);
-    }
+    setCollapsed(!editorPane.classList.contains('collapsed'));
   }
 
   /**
@@ -1148,6 +1430,16 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
       updateLineGutter();
       debouncedSave();
       debouncedLint(editor.value);
+    });
+
+    // Auto-switch to preview after paste
+    editor.addEventListener('paste', () => {
+      setTimeout(() => {
+        updateLineGutter();
+        debouncedSave();
+        debouncedLint(editor.value);
+        switchToPreviewAfterPaste();
+      }, 0);
     });
 
     // Theme toggle
