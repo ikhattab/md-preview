@@ -336,7 +336,7 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'loose',
         fontFamily:
-          '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          '"Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         htmlLabels: false,
         flowchart: {
           htmlLabels: false,
@@ -429,7 +429,8 @@ Check out [Markdown Guide](https://www.markdownguide.org) to learn more.
     canvas.width = Math.ceil(width * PNG_SCALE);
     canvas.height = Math.ceil(height * PNG_SCALE);
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    ctx.fillStyle = isDark ? '#221e18' : '#fffdf8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(PNG_SCALE, PNG_SCALE);
     ctx.drawImage(img, 0, 0, width, height);
