@@ -1,64 +1,73 @@
 /* ═══════════════════════════════════════════════════════════════
    MD Preview — Styles
-   A distraction-free, beautiful markdown editor
+   Warm, calm, reading-focused markdown editor
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────
-   CSS Variables & Theming (Zinc/Slate Palette)
+   CSS Variables & Theming (Warm Paper Palette)
    ───────────────────────────────────────────────────────────────── */
 :root {
-  /* Light Theme (Zinc-based) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f4f4f5; /* Zinc-100 */
-  --bg-tertiary: #e4e4e7; /* Zinc-200 */
-  --bg-surface: #ffffff;
+  /* Light Theme — warm paper */
+  --bg-primary: #faf7f1;
+  --bg-secondary: #f1ebe0;
+  --bg-tertiary: #e7dfd0;
+  --bg-surface: #fffdf8;
 
-  --text-primary: #09090b; /* Zinc-950 */
-  --text-secondary: #52525b; /* Zinc-600 */
-  --text-muted: #a1a1aa; /* Zinc-400 */
+  --text-primary: #2c2722;
+  --text-secondary: #6b6256;
+  --text-muted: #a99e8d;
 
-  --border-color: #e4e4e7; /* Zinc-200 */
-  --border-hover: #d4d4d8; /* Zinc-300 */
+  --border-color: #e6ddcd;
+  --border-hover: #d4c9b5;
 
-  --accent: #18181b; /* Zinc-950 (Black for high contrast) */
-  --accent-muted: #71717a; /* Zinc-500 */
-  --accent-glow: rgba(0, 0, 0, 0.05);
+  --accent: #b25a37;
+  --accent-muted: #8f6b52;
+  --accent-glow: rgba(178, 90, 55, 0.12);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(44, 39, 34, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(44, 39, 34, 0.08);
+  --shadow-lg: 0 8px 24px -4px rgba(44, 39, 34, 0.1);
 
-  --code-bg: #f4f4f5;
-  --blockquote-border: #d4d4d8;
-  --link-color: #2563eb; /* A slight touch of blue for links is standard */
+  --code-bg: #f1ebe0;
+  --blockquote-border: #d4c9b5;
+  --link-color: #b25a37;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --selection-bg: rgba(178, 90, 55, 0.18);
+  --selection-fg: #2c2722;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
 }
 
 [data-theme='dark'] {
-  /* Dark Theme (Zinc-based dark) */
-  --bg-primary: #09090b; /* Zinc-950 */
-  --bg-secondary: #09090b; /* Same as primary for cleaner flat look */
-  --bg-tertiary: #18181b; /* Zinc-900 */
-  --bg-surface: #18181b;
+  /* Dark Theme — warm espresso */
+  --bg-primary: #1b1916;
+  --bg-secondary: #1b1916;
+  --bg-tertiary: #2a251f;
+  --bg-surface: #221e18;
 
-  --text-primary: #f4f4f5; /* Zinc-100 */
-  --text-secondary: #a1a1aa; /* Zinc-400 */
-  --text-muted: #52525b; /* Zinc-600 */
+  --text-primary: #ece5d8;
+  --text-secondary: #b1a795;
+  --text-muted: #6e6557;
 
-  --border-color: #27272a; /* Zinc-800 */
-  --border-hover: #3f3f46; /* Zinc-700 */
+  --border-color: #332d25;
+  --border-hover: #453d32;
 
-  --accent: #fafafa; /* White accent */
-  --accent-muted: #a1a1aa;
-  --accent-glow: rgba(255, 255, 255, 0.05);
+  --accent: #dd9264;
+  --accent-muted: #a67d5c;
+  --accent-glow: rgba(221, 146, 100, 0.15);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 
-  --code-bg: #18181b;
-  --blockquote-border: #3f3f46;
-  --link-color: #60a5fa;
+  --code-bg: #2a251f;
+  --blockquote-border: #453d32;
+  --link-color: #dd9264;
+
+  --selection-bg: rgba(221, 146, 100, 0.22);
+  --selection-fg: #ece5d8;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -89,6 +98,11 @@ body {
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 
 /* Accessibility helpers */
@@ -160,11 +174,11 @@ body {
 }
 
 .logo {
-  font-family: 'Outfit', var(--font-sans);
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .header-controls {
@@ -248,11 +262,11 @@ textarea:focus:not(:focus-visible) {
 }
 
 .scroll-sync-toggle.active:hover {
-  background: rgba(37, 99, 235, 0.1);
+  background: var(--accent-glow);
 }
 
 [data-theme='dark'] .scroll-sync-toggle.active:hover {
-  background: rgba(96, 165, 250, 0.15);
+  background: var(--accent-glow);
 }
 
 .scroll-sync-toggle:not(.active) .synced-icon {
@@ -515,31 +529,32 @@ textarea:focus:not(:focus-visible) {
 
 /* Expand prose for wider reading experience */
 .editor-pane.collapsed ~ .preview-pane .preview {
-  padding: 3rem 4rem;
+  padding: 2.5rem clamp(1.25rem, 4vw, 2.5rem);
 }
 
 .editor-pane.collapsed ~ .preview-pane .prose {
-  max-width: 90ch; /* Wider than default 65ch */
-  font-size: 1.1rem; /* Larger text for easier reading */
-  line-height: 1.85; /* More generous line height */
+  max-width: min(96ch, 100%);
+  width: 100%;
+  font-size: 1.125rem;
+  line-height: 1.75;
 }
 
 /* Larger headings in zen mode */
 .editor-pane.collapsed ~ .preview-pane .prose h1 {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
 }
 
 .editor-pane.collapsed ~ .preview-pane .prose h2 {
-  font-size: 1.75rem;
+  font-size: 1.875rem;
 }
 
 .editor-pane.collapsed ~ .preview-pane .prose h3 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
 }
 
 /* More relaxed paragraph spacing */
 .editor-pane.collapsed ~ .preview-pane .prose p {
-  margin-bottom: 1.75em;
+  margin-bottom: 1.85em;
 }
 
 /* Resize Handle */
@@ -701,8 +716,11 @@ textarea:focus:not(:focus-visible) {
 }
 
 .prose {
-  max-width: 65ch; /* Optimal reading width */
+  max-width: 78ch;
   margin: 0 auto;
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.75;
 }
 
 .prose > :first-child {
@@ -713,26 +731,29 @@ textarea:focus:not(:focus-visible) {
 .prose h2,
 .prose h3,
 .prose h4 {
-  font-family: var(--font-sans);
+  font-family: var(--font-display);
   color: var(--text-primary);
   margin-top: 2em;
   margin-bottom: 0.75em;
   font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .prose h1 {
-  font-size: 2rem;
+  font-size: 2.125rem;
 }
 .prose h2 {
   font-size: 1.5rem;
   margin-top: 2.5em;
-  padding-bottom: 0.5em;
+  padding-bottom: 0.45em;
   border-bottom: 1px solid var(--border-color);
 }
 .prose h3 {
   font-size: 1.25rem;
+}
+.prose h4 {
+  font-size: 1.1rem;
 }
 
 .prose p {
@@ -740,13 +761,23 @@ textarea:focus:not(:focus-visible) {
   line-height: 1.75;
 }
 
+.prose li {
+  line-height: 1.75;
+}
+
 .prose a {
   color: var(--link-color);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
+  text-decoration: underline;
+  text-decoration-color: rgba(178, 90, 55, 0.35);
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
 }
 .prose a:hover {
-  border-bottom-color: var(--link-color);
+  text-decoration-color: var(--link-color);
+}
+
+[data-theme='dark'] .prose a {
+  text-decoration-color: rgba(221, 146, 100, 0.4);
 }
 
 .prose code {
@@ -774,7 +805,7 @@ textarea:focus:not(:focus-visible) {
 }
 
 .prose blockquote {
-  border-left: 3px solid var(--blockquote-border);
+  border-left: 3px solid var(--accent-muted);
   padding-left: 1.25rem;
   margin: 1.5em 0;
   color: var(--text-secondary);
@@ -848,14 +879,14 @@ textarea:focus:not(:focus-visible) {
 }
 
 .prose mark {
-  background: rgba(250, 204, 21, 0.35);
+  background: rgba(178, 90, 55, 0.2);
   color: inherit;
-  padding: 0.1em 0.2em;
+  padding: 0.1em 0.25em;
   border-radius: 0.15rem;
 }
 
 [data-theme='dark'] .prose mark {
-  background: rgba(250, 204, 21, 0.2);
+  background: rgba(221, 146, 100, 0.25);
 }
 
 .prose sub,
