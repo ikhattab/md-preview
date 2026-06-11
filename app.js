@@ -158,7 +158,15 @@ Check out the [Markdown Guide](https://www.markdownguide.org) to learn more.
     'https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css';
   const KATEX_CSS_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css';
   const GOOGLE_FONTS_URL =
-    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap';
+    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap';
+  const HLJS_JS_URL =
+    'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js';
+  const KATEX_JS_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js';
+  const MARKED_KATEX_JS_URL =
+    'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.10/lib/index.umd.js';
+  const MERMAID_JS_URL = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+  const MATH_PATTERN = /\$\$?[^\s$]/;
+  const FENCED_CODE_LANG = /```[\w-]+/;
 
   const EXPORT_RESET_CSS = `
 html, body {
@@ -236,6 +244,131 @@ body {
         }, limit);
       }
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Lazy asset loading
+  // ═══════════════════════════════════════════════════════════════
+
+  const assetCache = new Map();
+  let katexConfigured = false;
+  let katexLoading = null;
+  let hljsLoading = null;
+  let mermaidLoading = null;
+  let assetRerenderScheduled = false;
+
+  function loadScript(src) {
+    if (assetCache.has(src)) return assetCache.get(src);
+    const p = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(s);
+    });
+    assetCache.set(src, p);
+    return p;
+  }
+
+  function loadStyle(href, id, { disabled = false } = {}) {
+    const key = id || href;
+    if (assetCache.has(key)) return assetCache.get(key);
+    if (id && document.getElementById(id)) return Promise.resolve();
+
+    const p = new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      if (id) link.id = id;
+      if (disabled) link.disabled = true;
+      link.onload = () => resolve();
+      link.onerror = () => reject(new Error(`Failed to load stylesheet: ${href}`));
+      document.head.appendChild(link);
+    });
+    assetCache.set(key, p);
+    return p;
+  }
+
+  function scheduleAssetRerender() {
+    if (assetRerenderScheduled) return;
+    assetRerenderScheduled = true;
+    requestAnimationFrame(() => {
+      assetRerenderScheduled = false;
+      updatePreview();
+    });
+  }
+
+  function syncHljsThemeStyles() {
+    const hljsLight = document.getElementById('hljs-theme-light');
+    const hljsDark = document.getElementById('hljs-theme-dark');
+    if (!hljsLight || !hljsDark) return;
+
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    hljsLight.disabled = isDark;
+    hljsDark.disabled = !isDark;
+  }
+
+  function ensureKatex() {
+    if (katexConfigured) return Promise.resolve();
+    if (katexLoading) return katexLoading;
+
+    katexLoading = (async () => {
+      await loadStyle(KATEX_CSS_URL, 'katex-css');
+      await loadScript(KATEX_JS_URL);
+      await loadScript(MARKED_KATEX_JS_URL);
+      if (typeof katex !== 'undefined' && typeof markedKatex !== 'undefined') {
+        marked.use(
+          markedKatex({
+            throwOnError: false,
+            nonStandard: true,
+          })
+        );
+        katexConfigured = true;
+        scheduleAssetRerender();
+      }
+    })().catch((err) => {
+      console.warn('KaTeX load failed:', err);
+      katexLoading = null;
+    });
+
+    return katexLoading;
+  }
+
+  function ensureHljs() {
+    if (typeof hljs !== 'undefined') return Promise.resolve();
+    if (hljsLoading) return hljsLoading;
+
+    hljsLoading = (async () => {
+      await Promise.all([
+        loadStyle(HLJS_LIGHT_URL, 'hljs-theme-light'),
+        loadStyle(HLJS_DARK_URL, 'hljs-theme-dark', { disabled: true }),
+        loadScript(HLJS_JS_URL),
+      ]);
+      syncHljsThemeStyles();
+      scheduleAssetRerender();
+    })().catch((err) => {
+      console.warn('Highlight.js load failed:', err);
+      hljsLoading = null;
+    });
+
+    return hljsLoading;
+  }
+
+  function ensureMermaid() {
+    if (typeof mermaid !== 'undefined') return Promise.resolve();
+    if (mermaidLoading) return mermaidLoading;
+
+    mermaidLoading = loadScript(MERMAID_JS_URL)
+      .then(() => {
+        initMermaid();
+      })
+      .catch((err) => {
+        console.warn('Mermaid load failed:', err);
+        mermaidLoading = null;
+      });
+
+    return mermaidLoading;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -367,15 +500,6 @@ body {
    */
   function configureMarked() {
     if (typeof marked !== 'undefined') {
-      if (typeof markedKatex !== 'undefined') {
-        marked.use(
-          markedKatex({
-            throwOnError: false,
-            nonStandard: true,
-          })
-        );
-      }
-
       // Create a custom renderer for code blocks with Highlight.js
       const renderer = new marked.Renderer();
 
@@ -397,6 +521,10 @@ body {
         if (lang === 'mermaid') {
           const id = `mermaid-${mermaidCounter++}`;
           return `<div class="mermaid" id="${id}">${escapeHtml(codeText)}</div>`;
+        }
+
+        if (lang && lang !== 'mermaid' && typeof hljs === 'undefined') {
+          ensureHljs();
         }
 
         if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
@@ -648,10 +776,11 @@ body {
    * Render mermaid diagrams in the preview
    */
   async function renderMermaidDiagrams() {
-    if (typeof mermaid === 'undefined') return;
-
     const diagrams = preview.querySelectorAll('.mermaid:not(.mermaid-rendered)');
     if (diagrams.length === 0) return;
+
+    await ensureMermaid();
+    if (typeof mermaid === 'undefined') return;
 
     diagrams.forEach(stashMermaidSource);
 
@@ -738,6 +867,14 @@ body {
     const markdownText = editor.value;
 
     mermaidCounter = 0;
+
+    if (!katexConfigured && MATH_PATTERN.test(markdownText)) {
+      ensureKatex();
+    }
+
+    if (typeof hljs === 'undefined' && FENCED_CODE_LANG.test(markdownText)) {
+      ensureHljs();
+    }
 
     if (typeof marked !== 'undefined') {
       preview.innerHTML = marked.parse(markdownText);
@@ -914,18 +1051,7 @@ body {
     html.setAttribute('data-theme', theme);
     setStorageItem(STORAGE_KEYS.THEME, theme);
 
-    // Update Highlight.js theme
-    const hljsLight = document.getElementById('hljs-theme-light');
-    const hljsDark = document.getElementById('hljs-theme-dark');
-    if (hljsLight && hljsDark) {
-      if (theme === 'dark') {
-        hljsLight.disabled = true;
-        hljsDark.disabled = false;
-      } else {
-        hljsLight.disabled = false;
-        hljsDark.disabled = true;
-      }
-    }
+    syncHljsThemeStyles();
 
     // Re-render mermaid diagrams with new theme
     prepareMermaidForRerender();
@@ -1541,19 +1667,7 @@ body {
    */
   function applyThemeVisual(theme) {
     html.setAttribute('data-theme', theme);
-
-    const hljsLight = document.getElementById('hljs-theme-light');
-    const hljsDark = document.getElementById('hljs-theme-dark');
-    if (hljsLight && hljsDark) {
-      if (theme === 'dark') {
-        hljsLight.disabled = true;
-        hljsDark.disabled = false;
-      } else {
-        hljsLight.disabled = false;
-        hljsDark.disabled = true;
-      }
-    }
-
+    syncHljsThemeStyles();
     initMermaid();
   }
 
@@ -1974,7 +2088,6 @@ ${bodyHtml}
 
   function init() {
     configureMarked();
-    initMermaid(); // Initialize mermaid before first render
     loadTheme();
     loadCollapseState();
     loadEditorWidth();

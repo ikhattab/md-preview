@@ -19,6 +19,7 @@ const FILES_TO_HASH = [
 
 // Static files to copy as-is
 const STATIC_FILES = [
+  '_headers',
   'robots.txt',
   'sitemap.xml',
   'site.webmanifest',
