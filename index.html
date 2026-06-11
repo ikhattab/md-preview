@@ -254,6 +254,30 @@
             </svg>
             <span class="lint-count" id="lintCount" aria-live="polite"></span>
           </button>
+          <button
+            class="export-toggle"
+            id="exportBtn"
+            aria-label="Export preview as HTML"
+            title="Export HTML"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
             <!-- Sun Icon -->
             <svg
@@ -369,5 +393,53 @@
         </section>
       </main>
     </div>
+
+    <dialog class="export-dialog" id="exportDialog" aria-labelledby="exportDialogTitle">
+      <form method="dialog" class="export-dialog-form" id="exportDialogForm">
+        <header class="export-dialog-header">
+          <h2 class="export-dialog-title" id="exportDialogTitle">Export HTML</h2>
+          <p class="export-dialog-desc">
+            Download a self-contained HTML file with the same styles and rendered content.
+          </p>
+        </header>
+
+        <div class="export-dialog-field">
+          <label class="export-dialog-label" for="exportFilename">Filename</label>
+          <input
+            type="text"
+            id="exportFilename"
+            class="export-dialog-input"
+            value="export"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="export-dialog-field">
+          <label class="export-dialog-label" for="exportTheme">Theme</label>
+          <select id="exportTheme" class="export-dialog-select">
+            <option value="current" selected>Current theme</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+
+        <div class="export-dialog-field export-dialog-checkbox-field">
+          <label class="export-dialog-checkbox-label">
+            <input type="checkbox" id="exportEmbedImages" checked />
+            <span>Embed images as base64</span>
+          </label>
+        </div>
+
+        <footer class="export-dialog-actions">
+          <button type="button" class="export-dialog-btn export-dialog-btn-secondary" id="exportCancelBtn">
+            Cancel
+          </button>
+          <button type="button" class="export-dialog-btn export-dialog-btn-primary" id="exportDownloadBtn" data-export-download>
+            Download
+          </button>
+        </footer>
+      </form>
+    </dialog>
   </body>
 </html>

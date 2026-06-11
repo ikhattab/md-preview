@@ -142,7 +142,52 @@ Check out the [Markdown Guide](https://www.markdownguide.org) to learn more.
   const lintPanel = document.getElementById('lintPanel');
   const lintList = document.getElementById('lintList');
   const lineGutter = document.getElementById('lineGutter');
+  const exportBtn = document.getElementById('exportBtn');
+  const exportDialog = document.getElementById('exportDialog');
+  const exportFilenameInput = document.getElementById('exportFilename');
+  const exportThemeSelect = document.getElementById('exportTheme');
+  const exportEmbedImages = document.getElementById('exportEmbedImages');
+  const exportCancelBtn = document.getElementById('exportCancelBtn');
+  const exportDownloadBtn = document.getElementById('exportDownloadBtn');
   const html = document.documentElement;
+
+  // Export URLs
+  const HLJS_LIGHT_URL =
+    'https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css';
+  const HLJS_DARK_URL =
+    'https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css';
+  const KATEX_CSS_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css';
+  const GOOGLE_FONTS_URL =
+    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap';
+
+  const EXPORT_RESET_CSS = `
+html, body {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-primary);
+}
+.preview {
+  flex: none !important;
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 2rem clamp(1.25rem, 4vw, 2.5rem);
+}
+.prose {
+  max-width: min(78ch, 100%);
+}
+.mermaid-toolbar,
+.code-copy-btn {
+  display: none !important;
+}
+`.trim();
 
   // Mobile breakpoint
   const MOBILE_BREAKPOINT = 768;
@@ -1487,6 +1532,315 @@ Check out the [Markdown Guide](https://www.markdownguide.org) to learn more.
   // Event Listeners
   // ═══════════════════════════════════════════════════════════════
 
+  // ═══════════════════════════════════════════════════════════════
+  // HTML Export
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Apply theme visuals without persisting to storage (for export preview)
+   */
+  function applyThemeVisual(theme) {
+    html.setAttribute('data-theme', theme);
+
+    const hljsLight = document.getElementById('hljs-theme-light');
+    const hljsDark = document.getElementById('hljs-theme-dark');
+    if (hljsLight && hljsDark) {
+      if (theme === 'dark') {
+        hljsLight.disabled = true;
+        hljsDark.disabled = false;
+      } else {
+        hljsLight.disabled = false;
+        hljsDark.disabled = true;
+      }
+    }
+
+    initMermaid();
+  }
+
+  /**
+   * Fetch CSS text from a URL
+   */
+  async function fetchCssText(url) {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Failed to fetch CSS: ${url}`);
+    return resp.text();
+  }
+
+  /**
+   * Rewrite KaTeX relative font URLs to absolute CDN URLs
+   */
+  function rewriteKaTeXFontUrls(css, baseUrl) {
+    const base = baseUrl.replace(/\/[^/]+$/, '/');
+    return css.replace(/url\((['"]?)(?!data:|https?:|\/\/)([^)'"]+)\1\)/g, (_match, _quote, path) => {
+      return `url("${new URL(path, base).href}")`;
+    });
+  }
+
+  /**
+   * Read the local app stylesheet via CSSOM (works with hashed build filenames)
+   */
+  async function readSameOriginStylesheet() {
+    for (const sheet of document.styleSheets) {
+      const linkEl = sheet.ownerNode;
+      if (linkEl?.disabled) continue;
+      if (linkEl?.tagName === 'LINK' && linkEl.getAttribute('rel') === 'stylesheet') {
+        const href = linkEl.getAttribute('href') || '';
+        if (href.includes('styles') && !href.includes('highlight') && !href.includes('katex')) {
+          try {
+            return [...sheet.cssRules].map((rule) => rule.cssText).join('\n');
+          } catch {
+            if (sheet.href) {
+              return fetchCssText(sheet.href);
+            }
+          }
+        }
+      }
+    }
+
+    const stylesLink = document.querySelector('link[href*="styles"][rel="stylesheet"]');
+    if (stylesLink?.href) {
+      return fetchCssText(stylesLink.href);
+    }
+
+    return '';
+  }
+
+  /**
+   * Collect all CSS needed for a standalone export
+   */
+  async function collectInlineCss(exportTheme) {
+    const isDark = exportTheme === 'dark';
+    const parts = [];
+
+    const appCss = await readSameOriginStylesheet();
+    if (appCss) parts.push(appCss);
+
+    parts.push(await fetchCssText(isDark ? HLJS_DARK_URL : HLJS_LIGHT_URL));
+
+    let katexCss = await fetchCssText(KATEX_CSS_URL);
+    katexCss = rewriteKaTeXFontUrls(katexCss, KATEX_CSS_URL);
+    parts.push(katexCss);
+
+    // Appended last so it overrides inlined app layout rules (overflow: hidden, height: 100%)
+    parts.push(EXPORT_RESET_CSS);
+
+    return parts.join('\n');
+  }
+
+  /**
+   * Convert a Blob to a base64 data URL
+   */
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * Embed images in the export clone as base64 data URLs
+   */
+  async function inlineImages(rootEl) {
+    const images = rootEl.querySelectorAll('img');
+    await Promise.all(
+      [...images].map(async (img) => {
+        const src = img.getAttribute('src');
+        if (!src || src.startsWith('data:')) return;
+
+        try {
+          const resp = await fetch(src);
+          if (!resp.ok) return;
+          const blob = await resp.blob();
+          img.src = await blobToDataUrl(blob);
+        } catch {
+          // Keep original src on failure (CORS, network, etc.)
+        }
+      })
+    );
+  }
+
+  /**
+   * Clone preview content and strip app-only UI for export
+   */
+  function prepareExportClone(sourceEl) {
+    const clone = sourceEl.cloneNode(true);
+
+    clone.querySelectorAll('.mermaid-toolbar, .code-copy-btn').forEach((el) => el.remove());
+    clone.querySelectorAll('.code-block-with-copy').forEach((pre) => {
+      pre.classList.remove('code-block-with-copy');
+    });
+
+    clone.removeAttribute('id');
+    clone.removeAttribute('aria-live');
+    clone.removeAttribute('aria-label');
+
+    clone.querySelectorAll('[data-error-bound]').forEach((el) => {
+      el.removeAttribute('data-error-bound');
+    });
+
+    clone.querySelectorAll('.mermaid').forEach((el) => {
+      el.classList.remove('mermaid-has-toolbar');
+      el.removeAttribute('data-mermaid-source');
+    });
+
+    return clone;
+  }
+
+  /**
+   * Derive a default export filename from the first heading
+   */
+  function getDefaultExportFilename() {
+    const h1 = preview.querySelector('h1');
+    if (h1?.textContent?.trim()) {
+      const slug = h1.textContent
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .slice(0, 50);
+      if (slug) return slug;
+    }
+    return 'export';
+  }
+
+  /**
+   * Derive document title for exported HTML
+   */
+  function getExportDocumentTitle() {
+    const h1 = preview.querySelector('h1');
+    if (h1?.textContent?.trim()) return h1.textContent.trim();
+    return 'Markdown Export';
+  }
+
+  /**
+   * Assemble the full standalone HTML document
+   */
+  function assembleExportDocument({ title, theme, css, bodyHtml }) {
+    return `<!DOCTYPE html>
+<html lang="en" data-theme="${theme}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="${GOOGLE_FONTS_URL}" rel="stylesheet">
+  <style>
+${css}
+  </style>
+</head>
+<body>
+${bodyHtml}
+</body>
+</html>`;
+  }
+
+  /**
+   * Build a self-contained HTML export from the current preview
+   */
+  async function buildExportHtml(options) {
+    const { theme, embedImages } = options;
+    const originalTheme = html.getAttribute('data-theme') || 'light';
+    const exportTheme = theme === 'current' ? originalTheme : theme;
+    const themeChanged = exportTheme !== originalTheme;
+
+    if (themeChanged) {
+      applyThemeVisual(exportTheme);
+      prepareMermaidForRerender();
+      await renderMermaidDiagrams();
+    }
+
+    try {
+      const clone = prepareExportClone(preview);
+      if (embedImages) {
+        await inlineImages(clone);
+      }
+
+      const css = await collectInlineCss(exportTheme);
+      const title = getExportDocumentTitle();
+
+      return assembleExportDocument({
+        title,
+        theme: exportTheme,
+        css,
+        bodyHtml: clone.outerHTML,
+      });
+    } finally {
+      if (themeChanged) {
+        applyThemeVisual(originalTheme);
+        prepareMermaidForRerender();
+        await renderMermaidDiagrams();
+      }
+    }
+  }
+
+  /**
+   * Trigger download of the exported HTML file
+   */
+  function downloadHtml(filename, htmlContent) {
+    const safeName = String(filename).replace(/[^\w\s.-]/g, '').trim() || 'export';
+    const name = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Open the export dialog with defaults
+   */
+  function openExportDialog() {
+    if (!exportDialog) return;
+    if (exportFilenameInput) {
+      exportFilenameInput.value = getDefaultExportFilename();
+    }
+    if (exportThemeSelect) {
+      exportThemeSelect.value = 'current';
+    }
+    if (exportEmbedImages) {
+      exportEmbedImages.checked = true;
+    }
+    exportDialog.showModal();
+    exportFilenameInput?.focus();
+    exportFilenameInput?.select();
+  }
+
+  /**
+   * Handle export download from the dialog
+   */
+  async function handleExportDownload() {
+    const filename = exportFilenameInput?.value || 'export';
+    const theme = exportThemeSelect?.value || 'current';
+    const embedImages = exportEmbedImages?.checked ?? true;
+
+    if (exportDownloadBtn) {
+      exportDownloadBtn.disabled = true;
+      exportDownloadBtn.textContent = 'Exporting…';
+    }
+
+    try {
+      const htmlContent = await buildExportHtml({ theme, embedImages });
+      downloadHtml(filename, htmlContent);
+      showToast('Exported HTML');
+      exportDialog?.close();
+    } catch (err) {
+      console.warn('HTML export failed:', err);
+      showToast('Export failed');
+    } finally {
+      if (exportDownloadBtn) {
+        exportDownloadBtn.disabled = false;
+        exportDownloadBtn.textContent = 'Download';
+      }
+    }
+  }
+
   function setupEventListeners() {
     // Live preview on input
     editor.addEventListener('input', () => {
@@ -1505,6 +1859,29 @@ Check out the [Markdown Guide](https://www.markdownguide.org) to learn more.
         switchToPreviewAfterPaste();
       }, 0);
     });
+
+    // Export
+    if (exportBtn) {
+      exportBtn.addEventListener('click', openExportDialog);
+    }
+
+    if (exportCancelBtn) {
+      exportCancelBtn.addEventListener('click', () => exportDialog?.close());
+    }
+
+    if (exportDownloadBtn) {
+      exportDownloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleExportDownload();
+      });
+    }
+
+    if (exportDialog) {
+      exportDialog.addEventListener('cancel', (e) => {
+        e.preventDefault();
+        exportDialog.close();
+      });
+    }
 
     // Theme toggle
     themeToggle.addEventListener('click', toggleTheme);
