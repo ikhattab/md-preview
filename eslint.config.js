@@ -18,7 +18,9 @@ export default [
       globals: {
         ...globals.browser,
         marked: 'readonly',
+        markedHighlight: 'readonly',
         markedKatex: 'readonly',
+        DOMPurify: 'readonly',
         katex: 'readonly',
         hljs: 'readonly',
         mermaid: 'readonly',

@@ -4,7 +4,7 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 
 ### Features
 
-- Live markdown preview powered by `marked` with syntax highlighting via `highlight.js`
+- Live markdown preview powered by pinned `marked@15` with `marked-highlight` and `DOMPurify` sanitization; syntax highlighting via lazy-loaded `highlight.js`
 - Light/dark theme toggle with Highlight.js theme switching
 - Local auto-save (content, theme, pane width, and collapse state stored in `localStorage` on your device only)
 - Resizable split panes and collapsible editor for focused reading
@@ -49,7 +49,7 @@ fly deploy
 ### Tech Stack
 
 - HTML/CSS/JS only (no framework)
-- CDN: `marked` for markdown parsing, `highlight.js` for code highlighting
+- CDN: `marked@15`, `marked-highlight`, and `DOMPurify` for parsing and safe HTML output; `highlight.js` loaded on demand for code blocks
 - Caddy (Docker) for static file serving
 
 ### Project Structure

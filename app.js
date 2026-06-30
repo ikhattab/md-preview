@@ -255,7 +255,6 @@ body {
   let katexLoading = null;
   let hljsLoading = null;
   let mermaidLoading = null;
-  let assetRerenderScheduled = false;
 
   function loadScript(src) {
     if (assetCache.has(src)) return assetCache.get(src);
@@ -291,12 +290,7 @@ body {
   }
 
   function scheduleAssetRerender() {
-    if (assetRerenderScheduled) return;
-    assetRerenderScheduled = true;
-    requestAnimationFrame(() => {
-      assetRerenderScheduled = false;
-      updatePreview();
-    });
+    schedulePreviewUpdate();
   }
 
   function syncHljsThemeStyles() {
@@ -492,60 +486,108 @@ body {
 
   // Counter for unique mermaid diagram IDs
   let mermaidCounter = 0;
+  let previewRafId = null;
   const PNG_SCALE = 3;
   let toastTimeout = null;
 
+  const PURIFY_CONFIG = {
+    ADD_TAGS: ['mark', 'kbd', 'input'],
+  };
+
   /**
-   * Configure marked.js options with syntax highlighting
+   * Sanitize parsed HTML before inserting into the preview DOM
+   */
+  function sanitizePreviewHtml(rawHtml) {
+    if (typeof DOMPurify !== 'undefined') {
+      return DOMPurify.sanitize(rawHtml, PURIFY_CONFIG);
+    }
+    return rawHtml;
+  }
+
+  /**
+   * Batch preview updates to one parse per animation frame
+   */
+  function schedulePreviewUpdate() {
+    if (previewRafId !== null) {
+      return;
+    }
+    previewRafId = requestAnimationFrame(() => {
+      previewRafId = null;
+      updatePreview();
+    });
+  }
+
+  /**
+   * Configure marked.js with extensions for GFM, Mermaid, and syntax highlighting
    */
   function configureMarked() {
-    if (typeof marked !== 'undefined') {
-      // Create a custom renderer for code blocks with Highlight.js
-      const renderer = new marked.Renderer();
+    if (typeof marked === 'undefined') {
+      return;
+    }
 
-      renderer.image = function (token) {
-        const { href, title, text } = token;
-        if (!href) {
-          return text ? escapeHtml(text) : '';
-        }
-        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-        return `<img src="${escapeHtml(href)}" alt="${escapeHtml(text || '')}"${titleAttr} loading="lazy" decoding="async">`;
-      };
-
-      renderer.code = function (code, language) {
-        // Handle the case where code is an object (newer marked versions)
-        const codeText = typeof code === 'object' ? code.text : code;
-        const lang = typeof code === 'object' ? code.lang : language;
-
-        // Handle mermaid diagrams
-        if (lang === 'mermaid') {
-          const id = `mermaid-${mermaidCounter++}`;
-          return `<div class="mermaid" id="${id}">${escapeHtml(codeText)}</div>`;
-        }
-
-        if (lang && lang !== 'mermaid' && typeof hljs === 'undefined') {
-          ensureHljs();
-        }
-
-        if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
-          try {
-            const highlighted = hljs.highlight(codeText, { language: lang }).value;
-            return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
-          } catch (e) {
-            console.warn('Highlight.js error:', e);
+    marked.use({
+      breaks: true,
+      gfm: true,
+      extensions: [
+        {
+          name: 'mermaidBlock',
+          level: 'block',
+          start(src) {
+            const match = src.match(/```mermaid/);
+            return match ? match.index : undefined;
+          },
+          tokenizer(src) {
+            const match = /^```mermaid[^\n]*\n([\s\S]*?)\n```/.exec(src);
+            if (match) {
+              return {
+                type: 'mermaidBlock',
+                raw: match[0],
+                text: match[1].trim(),
+              };
+            }
+          },
+          renderer(token) {
+            const id = `mermaid-${mermaidCounter++}`;
+            return `<div class="mermaid" id="${id}">${escapeHtml(token.text)}</div>`;
+          },
+        },
+      ],
+      renderer: {
+        image({ href, title, text }) {
+          if (!href) {
+            return text ? escapeHtml(text) : '';
           }
-        }
+          const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+          return `<img src="${escapeHtml(href)}" alt="${escapeHtml(text || '')}"${titleAttr} loading="lazy" decoding="async">`;
+        },
+      },
+    });
 
-        // Fallback: escape HTML and return without highlighting
-        const escaped = codeText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `<pre><code>${escaped}</code></pre>`;
-      };
-
-      marked.setOptions({
-        breaks: true, // Convert \n to <br>
-        gfm: true, // GitHub Flavored Markdown
-        renderer: renderer,
-      });
+    const highlightModule = globalThis.markedHighlight;
+    if (highlightModule) {
+      marked.use(
+        highlightModule.markedHighlight({
+          emptyLangClass: 'hljs',
+          langPrefix: 'hljs language-',
+          highlight(code, lang) {
+            if (lang === 'mermaid') {
+              return escapeHtml(code);
+            }
+            if (typeof hljs === 'undefined') {
+              ensureHljs();
+              return escapeHtml(code);
+            }
+            if (lang && hljs.getLanguage(lang)) {
+              try {
+                return hljs.highlight(code, { language: lang }).value;
+              } catch (e) {
+                console.warn('Highlight.js error:', e);
+              }
+            }
+            return escapeHtml(code);
+          },
+        })
+      );
     }
   }
 
@@ -877,7 +919,7 @@ body {
     }
 
     if (typeof marked !== 'undefined') {
-      preview.innerHTML = marked.parse(markdownText);
+      preview.innerHTML = sanitizePreviewHtml(marked.parse(markdownText));
       postProcessPreview();
       renderMermaidDiagrams();
     } else {
@@ -1958,7 +2000,7 @@ ${bodyHtml}
   function setupEventListeners() {
     // Live preview on input
     editor.addEventListener('input', () => {
-      updatePreview();
+      schedulePreviewUpdate();
       updateLineGutter();
       debouncedSave();
       debouncedLint(editor.value);
