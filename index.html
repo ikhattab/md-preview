@@ -42,33 +42,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta name="theme-color" content="#faf7f1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1b1916" media="(prefers-color-scheme: dark)" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet"
-      />
-    </noscript>
 
-    <link rel="stylesheet" href="styles.css" />
-
-    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/lib/marked.umd.js" defer></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/marked-highlight@2.2.4/lib/index.umd.js"
-      defer
-    ></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" defer></script>
-    <script src="app.js" defer></script>
+    <script type="module" src="/app.js"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -85,7 +62,6 @@
         }
       }
     </script>
-
   </head>
   <body>
     <a class="skip-link" href="#mainContent">Skip to main content</a>
@@ -413,10 +389,19 @@
         </div>
 
         <footer class="export-dialog-actions">
-          <button type="button" class="export-dialog-btn export-dialog-btn-secondary" id="exportCancelBtn">
+          <button
+            type="button"
+            class="export-dialog-btn export-dialog-btn-secondary"
+            id="exportCancelBtn"
+          >
             Cancel
           </button>
-          <button type="button" class="export-dialog-btn export-dialog-btn-primary" id="exportDownloadBtn" data-export-download>
+          <button
+            type="button"
+            class="export-dialog-btn export-dialog-btn-primary"
+            id="exportDownloadBtn"
+            data-export-download
+          >
             Download
           </button>
         </footer>

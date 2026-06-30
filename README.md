@@ -4,26 +4,35 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 
 ### Features
 
-- Live markdown preview powered by pinned `marked@15` with `marked-highlight` and `DOMPurify` sanitization; syntax highlighting via lazy-loaded `highlight.js`
+- Live markdown preview powered by `marked` with `marked-highlight` and `DOMPurify` sanitization; syntax highlighting via lazy-loaded `highlight.js`
+- KaTeX math and Mermaid diagrams loaded on demand
 - Light/dark theme toggle with Highlight.js theme switching
 - Local auto-save (content, theme, pane width, and collapse state stored in `localStorage` on your device only)
 - Resizable split panes and collapsible editor for focused reading
 - Responsive layout and sensible defaults with a rich starter document
+- Self-hosted fonts and bundled dependencies (no third-party CDNs)
 
 ### Quick Start
 
-Prerequisites: Node.js 18+ (for the dev server) and npm.
+Prerequisites: Node.js 18+ and npm.
 
 ```bash
 npm install
-npm run dev      # serves the static site at http://localhost:3000
+npm run dev      # Vite dev server at http://localhost:5173
 ```
 
-You can also preview without Node by using any static file server against the repo root (e.g., `python -m http.server 3000`).
+For a production-like preview:
+
+```bash
+npm run build
+npm run preview  # serves ./dist at http://localhost:3000
+```
 
 ### Scripts
 
-- `npm run dev` – Serve the site locally on port 3000
+- `npm run dev` – Vite dev server with hot reload
+- `npm run build` – Production build to `dist/`
+- `npm run preview` – Serve the production build locally on port 3000
 - `npm run lint` – Run ESLint (no autofix)
 - `npm run lint:fix` – ESLint with autofix
 - `npm run format` / `npm run format:check` – Prettier format/check
@@ -46,20 +55,33 @@ fly auth login
 fly deploy
 ```
 
+Build before deploying:
+
+```bash
+npm run build
+```
+
 ### Tech Stack
 
-- HTML/CSS/JS only (no framework)
-- CDN: `marked@15`, `marked-highlight`, and `DOMPurify` for parsing and safe HTML output; `highlight.js` loaded on demand for code blocks
+- HTML/CSS/JS (no UI framework)
+- Vite for bundling and code-splitting
+- npm dependencies: `marked`, `marked-highlight`, `DOMPurify`, `highlight.js`, `katex`, `marked-katex-extension`, `mermaid`
+- Self-hosted fonts via `@fontsource`
 - Caddy (Docker) for static file serving
 
 ### Project Structure
 
-- `index.html` – Layout and asset loading
-- `styles.css` – Theming, layout, responsive styles
+- `index.html` – Layout and entry point
 - `app.js` – Editor logic (preview, autosave, theming, resize/collapse)
+- `lib/lazy-vendors.js` – Lazy-loaded heavy dependencies (hljs, KaTeX, Mermaid)
+- `styles.css` – Theming, layout, responsive styles
+- `vite.config.js` – Build configuration
+- `_headers` – Cache and CSP headers for static hosting
 - `Dockerfile` / `fly.toml` – Deployment artifacts for Fly.io
 
 ### Notes
 
-- All data stays on your device in the browser; nothing is sent to a backend or third party.
+- Markdown content and settings stay on your device; nothing is sent to a backend.
+- All scripts, styles, and fonts are served from the same origin (no CDN requests).
+- External images in markdown still load from their URLs when referenced.
 - If `localStorage` is unavailable, the app still works but won’t persist settings/content.

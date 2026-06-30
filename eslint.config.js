@@ -3,27 +3,19 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   {
-    files: ['eslint.config.js', 'scripts/**/*.js'],
+    files: ['eslint.config.js', 'vite.config.js', 'scripts/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
     },
   },
   {
-    files: ['**/*.js'],
-    ignores: ['eslint.config.js'],
+    files: ['app.js', 'lib/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'script',
+      sourceType: 'module',
       globals: {
         ...globals.browser,
-        marked: 'readonly',
-        markedHighlight: 'readonly',
-        markedKatex: 'readonly',
-        DOMPurify: 'readonly',
-        katex: 'readonly',
-        hljs: 'readonly',
-        mermaid: 'readonly',
       },
     },
     rules: {
@@ -64,7 +56,7 @@ export default [
     },
   },
   {
-    ignores: ['node_modules/**', '*.min.js'],
+    ignores: ['node_modules/**', 'dist/**', '*.min.js'],
   },
   eslintConfigPrettier,
 ];
