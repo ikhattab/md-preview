@@ -41,6 +41,8 @@ const STORAGE_KEYS = {
 const DEBOUNCE_DELAY = 300; // ms for auto-save debounce
 const SCROLL_SYNC_DELAY = 50; // ms for scroll sync debounce
 const LINT_DEBOUNCE_DELAY = 500; // ms for lint debounce (performance)
+const IMPORT_MAX_BYTES = 2 * 1024 * 1024; // 2 MB max import size
+const IMPORTABLE_EXTENSIONS = ['.md', '.markdown', '.txt'];
 
 // Scroll sync state
 let isScrollingEditor = false;
@@ -51,6 +53,9 @@ let scrollSyncEnabled = false;
 // Lint state
 let lintEnabled = false;
 let currentLintWarnings = [];
+let lastImportedFilename = null;
+let pendingImportText = null;
+let pendingImportFilename = null;
 
 // Prevent browser from trying to restore scroll positions on refresh
 if ('scrollRestoration' in history) {
@@ -168,6 +173,12 @@ const exportThemeSelect = document.getElementById('exportTheme');
 const exportEmbedImages = document.getElementById('exportEmbedImages');
 const exportCancelBtn = document.getElementById('exportCancelBtn');
 const exportDownloadBtn = document.getElementById('exportDownloadBtn');
+const importBtn = document.getElementById('importBtn');
+const importFileInput = document.getElementById('importFileInput');
+const importConfirmDialog = document.getElementById('importConfirmDialog');
+const importConfirmDesc = document.getElementById('importConfirmDesc');
+const importConfirmCancelBtn = document.getElementById('importConfirmCancelBtn');
+const importConfirmReplaceBtn = document.getElementById('importConfirmReplaceBtn');
 const html = document.documentElement;
 
 const MATH_PATTERN = /\$\$?[^\s$]/;
@@ -380,11 +391,22 @@ const PURIFY_CONFIG = {
   ADD_TAGS: ['mark', 'kbd', 'input'],
 };
 
+const PURIFY_SVG_CONFIG = {
+  USE_PROFILES: { svg: true, svgFilters: true },
+};
+
 /**
  * Sanitize parsed HTML before inserting into the preview DOM
  */
 function sanitizePreviewHtml(rawHtml) {
   return DOMPurify.sanitize(rawHtml, PURIFY_CONFIG);
+}
+
+/**
+ * Sanitize mermaid-rendered SVG before inserting into the preview DOM
+ */
+function sanitizeMermaidSvg(rawSvg) {
+  return DOMPurify.sanitize(rawSvg, PURIFY_SVG_CONFIG);
 }
 
 /**
@@ -478,7 +500,7 @@ function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: isDark ? 'dark' : 'default',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: '"Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       htmlLabels: false,
       flowchart: {
@@ -683,7 +705,7 @@ async function renderSingleMermaidDiagram(diagram) {
 
   try {
     const { svg } = await mermaid.render(`${id}-svg`, code);
-    diagram.innerHTML = svg;
+    diagram.innerHTML = sanitizeMermaidSvg(svg);
     diagram.classList.add('mermaid-rendered');
     attachMermaidToolbar(diagram);
   } catch (renderError) {
@@ -1572,6 +1594,104 @@ function handleViewportResize() {
 // ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
+// Markdown Import
+// ═══════════════════════════════════════════════════════════════
+
+function isImportableFile(file) {
+  const name = file.name.toLowerCase();
+  return IMPORTABLE_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
+
+function editorHasContent() {
+  return editor.value.trim().length > 0;
+}
+
+function slugifyFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, '');
+  const slug = base
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .slice(0, 50);
+  return slug || 'export';
+}
+
+function applyImportedContent(text, filename) {
+  editor.value = text;
+  lastImportedFilename = filename;
+  updatePreview();
+  saveContent();
+  debouncedLint(editor.value);
+  updateLineGutter();
+  showToast(`Imported ${filename}`);
+}
+
+function clearPendingImport() {
+  pendingImportText = null;
+  pendingImportFilename = null;
+}
+
+function openImportConfirmDialog(filename, text) {
+  pendingImportText = text;
+  pendingImportFilename = filename;
+  if (importConfirmDesc) {
+    importConfirmDesc.textContent = `Importing "${filename}" will replace everything in the editor.`;
+  }
+  importConfirmDialog?.showModal();
+  importConfirmReplaceBtn?.focus();
+}
+
+function confirmImportReplace() {
+  if (pendingImportText === null) return;
+  const text = pendingImportText;
+  const filename = pendingImportFilename || 'file';
+  clearPendingImport();
+  importConfirmDialog?.close();
+  applyImportedContent(text, filename);
+}
+
+function importMarkdownText(text, filename) {
+  if (editorHasContent()) {
+    openImportConfirmDialog(filename, text);
+  } else {
+    applyImportedContent(text, filename);
+  }
+}
+
+function readImportFile(file) {
+  if (!isImportableFile(file)) {
+    showToast('Unsupported file type');
+    return;
+  }
+  if (file.size > IMPORT_MAX_BYTES) {
+    showToast('File too large (max 2 MB)');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = typeof reader.result === 'string' ? reader.result : '';
+    importMarkdownText(text, file.name);
+  };
+  reader.onerror = () => {
+    showToast('Import failed');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function triggerImport() {
+  importFileInput?.click();
+}
+
+function handleImportFileSelect(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  readImportFile(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HTML Export
 // ═══════════════════════════════════════════════════════════════
 
@@ -1753,6 +1873,9 @@ function prepareExportClone(sourceEl) {
  * Derive a default export filename from the first heading
  */
 function getDefaultExportFilename() {
+  if (lastImportedFilename) {
+    return slugifyFilename(lastImportedFilename);
+  }
   const h1 = preview.querySelector('h1');
   if (h1?.textContent?.trim()) {
     const slug = h1.textContent
@@ -1920,6 +2043,52 @@ function setupEventListeners() {
       switchToPreviewAfterPaste();
     }, 0);
   });
+
+  // Import
+  if (importBtn) {
+    importBtn.addEventListener('click', triggerImport);
+  }
+
+  if (importFileInput) {
+    importFileInput.addEventListener('change', handleImportFileSelect);
+  }
+
+  if (importConfirmCancelBtn) {
+    importConfirmCancelBtn.addEventListener('click', () => {
+      clearPendingImport();
+      importConfirmDialog?.close();
+    });
+  }
+
+  if (importConfirmReplaceBtn) {
+    importConfirmReplaceBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      confirmImportReplace();
+    });
+  }
+
+  if (importConfirmDialog) {
+    importConfirmDialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      clearPendingImport();
+      importConfirmDialog.close();
+    });
+  }
+
+  const editorWrapper = document.querySelector('.editor-wrapper');
+  if (editorWrapper) {
+    editorWrapper.addEventListener('dragover', (e) => {
+      if (e.dataTransfer?.types.includes('Files')) {
+        e.preventDefault();
+      }
+    });
+    editorWrapper.addEventListener('drop', (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      e.preventDefault();
+      readImportFile(file);
+    });
+  }
 
   // Export
   if (exportBtn) {
