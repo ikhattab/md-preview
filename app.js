@@ -166,7 +166,11 @@ const lintCount = document.getElementById('lintCount');
 const lintPanel = document.getElementById('lintPanel');
 const lintList = document.getElementById('lintList');
 const lineGutter = document.getElementById('lineGutter');
-const exportBtn = document.getElementById('exportBtn');
+const exportMenu = document.getElementById('exportMenu');
+const exportMenuBtn = document.getElementById('exportMenuBtn');
+const exportMenuPopover = document.getElementById('exportMenuPopover');
+const exportMdBtn = document.getElementById('exportMdBtn');
+const exportHtmlBtn = document.getElementById('exportHtmlBtn');
 const exportDialog = document.getElementById('exportDialog');
 const exportFilenameInput = document.getElementById('exportFilename');
 const exportThemeSelect = document.getElementById('exportTheme');
@@ -1958,15 +1962,26 @@ async function buildExportHtml(options) {
 }
 
 /**
- * Trigger download of the exported HTML file
+ * Derive markdown file extension for export
  */
-function downloadHtml(filename, htmlContent) {
+function getMarkdownExportExtension() {
+  if (lastImportedFilename?.toLowerCase().endsWith('.markdown')) {
+    return '.markdown';
+  }
+  return '.md';
+}
+
+/**
+ * Trigger download of a text file
+ */
+function downloadTextFile(filename, content, { mimeType, extension }) {
   const safeName =
     String(filename)
       .replace(/[^\w\s.-]/g, '')
       .trim() || 'export';
-  const name = safeName.endsWith('.html') ? safeName : `${safeName}.html`;
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const ext = extension.startsWith('.') ? extension : `.${extension}`;
+  const name = safeName.toLowerCase().endsWith(ext) ? safeName : `${safeName}${ext}`;
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1975,6 +1990,59 @@ function downloadHtml(filename, htmlContent) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Trigger download of the exported HTML file
+ */
+function downloadHtml(filename, htmlContent) {
+  downloadTextFile(filename, htmlContent, {
+    mimeType: 'text/html;charset=utf-8',
+    extension: '.html',
+  });
+}
+
+/**
+ * Download the current editor content as markdown
+ */
+function downloadMarkdown() {
+  if (!editorHasContent()) {
+    showToast('Nothing to export');
+    return;
+  }
+  downloadTextFile(getDefaultExportFilename(), editor.value, {
+    mimeType: 'text/markdown;charset=utf-8',
+    extension: getMarkdownExportExtension(),
+  });
+  showToast('Downloaded .md');
+}
+
+function isExportMenuOpen() {
+  return exportMenuPopover && !exportMenuPopover.hidden;
+}
+
+function openExportMenu() {
+  if (!exportMenuPopover || !exportMenuBtn) return;
+  exportMenuPopover.hidden = false;
+  exportMenuBtn.setAttribute('aria-expanded', 'true');
+  exportMdBtn?.focus();
+}
+
+function closeExportMenu({ returnFocus = true } = {}) {
+  if (!exportMenuPopover || !exportMenuBtn) return;
+  exportMenuPopover.hidden = true;
+  exportMenuBtn.setAttribute('aria-expanded', 'false');
+  if (returnFocus) {
+    exportMenuBtn.focus();
+  }
+}
+
+function toggleExportMenu() {
+  if (isExportMenuOpen()) {
+    closeExportMenu();
+  } else {
+    openExportMenu();
+  }
 }
 
 /**
@@ -2090,10 +2158,43 @@ function setupEventListeners() {
     });
   }
 
-  // Export
-  if (exportBtn) {
-    exportBtn.addEventListener('click', openExportDialog);
+  // Export menu
+  if (exportMenuBtn) {
+    exportMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleExportMenu();
+    });
   }
+
+  if (exportMdBtn) {
+    exportMdBtn.addEventListener('click', () => {
+      closeExportMenu({ returnFocus: false });
+      downloadMarkdown();
+      exportMenuBtn?.focus();
+    });
+  }
+
+  if (exportHtmlBtn) {
+    exportHtmlBtn.addEventListener('click', () => {
+      closeExportMenu({ returnFocus: false });
+      openExportDialog();
+      exportMenuBtn?.focus();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!isExportMenuOpen()) return;
+    if (exportMenu?.contains(e.target)) return;
+    closeExportMenu();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!isExportMenuOpen()) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeExportMenu();
+    }
+  });
 
   if (exportCancelBtn) {
     exportCancelBtn.addEventListener('click', () => exportDialog?.close());
