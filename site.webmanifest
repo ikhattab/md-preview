@@ -1,6 +1,8 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "mdfor.work",
+  "short_name": "mdfor.work",
+  "id": "/",
+  "start_url": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

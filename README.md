@@ -1,6 +1,6 @@
-## md-preview
+## mdfor.work
 
-A fast, private, browser-only markdown editor with live preview. Built as a single-page app that runs entirely in the client, with optional containerization for hosting on Fly.io.
+A fast, private, browser-only markdown editor with live preview. Built as a single-page app that runs entirely in the client.
 
 ### Features
 
@@ -11,6 +11,7 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 - Light/dark theme toggle with Highlight.js theme switching
 - Local auto-save (content, theme, pane width, and collapse state stored in `localStorage` on your device only)
 - Resizable split panes and collapsible editor for focused reading
+- Scroll sync, custom markdown lint rules, and mobile editor/preview tabs
 - Responsive layout and sensible defaults with a rich starter document
 - Self-hosted fonts and bundled dependencies (no third-party CDNs)
 
@@ -38,30 +39,17 @@ npm run preview  # serves ./dist at http://localhost:3000
 - `npm run lint` – Run ESLint (no autofix)
 - `npm run lint:fix` – ESLint with autofix
 - `npm run format` / `npm run format:check` – Prettier format/check
+- `npm run check` – Lint and format check
 
-### Container Build
+### Deployment
 
-The provided `Dockerfile` uses Caddy to serve the static assets:
-
-```bash
-docker build -t md-preview .
-docker run -p 3000:3000 md-preview
-```
-
-### Deployment (Fly.io)
-
-`fly.toml` is configured for port 3000 with one shared CPU/256MB machine. Typical flow:
-
-```bash
-fly auth login
-fly deploy
-```
-
-Build before deploying:
+Build static assets and serve the `dist/` folder from any static host (Cloudflare Pages, Netlify, S3, nginx, etc.):
 
 ```bash
 npm run build
 ```
+
+Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts that support it.
 
 ### Tech Stack
 
@@ -69,17 +57,28 @@ npm run build
 - Vite for bundling and code-splitting
 - npm dependencies: `marked`, `marked-highlight`, `DOMPurify`, `highlight.js`, `katex`, `marked-katex-extension`, `mermaid`
 - Self-hosted fonts via `@fontsource`
-- Caddy (Docker) for static file serving
 
 ### Project Structure
 
 - `index.html` – Layout and entry point
-- `app.js` – Editor logic (preview, autosave, theming, resize/collapse)
+- `app.js` – Initialization and event wiring
+- `lib/constants.js` – Shared constants and default content
+- `lib/dom.js` – DOM element references
+- `lib/storage.js` – `localStorage` helpers
+- `lib/utils.js` – Debounce, throttle, and string helpers
+- `lib/preview.js` – Markdown parsing, sanitization, Mermaid, and preview updates
+- `lib/gutter.js` – Line number gutter
+- `lib/lint.js` – Custom markdown lint rules and panel UI
+- `lib/theme.js` – Theme load/toggle
+- `lib/layout.js` – Resize, collapse, mobile view, scroll sync
+- `lib/content.js` – Auto-save and content load
+- `lib/import-export.js` – Import and HTML/Markdown export
 - `lib/lazy-vendors.js` – Lazy-loaded heavy dependencies (hljs, KaTeX, Mermaid)
+- `lib/fonts.js` – Self-hosted font imports
 - `styles.css` – Theming, layout, responsive styles
 - `vite.config.js` – Build configuration
-- `_headers` – Cache and CSP headers for static hosting
-- `Dockerfile` / `fly.toml` – Deployment artifacts for Fly.io
+- `_headers` – Cache headers for static hosting
+- `site.webmanifest` – Web app manifest metadata
 
 ### Notes
 
