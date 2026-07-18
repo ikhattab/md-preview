@@ -213,13 +213,42 @@
           </button>
           <div class="file-actions" role="group" aria-label="File actions">
             <button type="button" class="file-action-btn" id="importBtn">Import</button>
-            <button
-              type="button"
-              class="file-action-btn file-action-btn-primary"
-              id="exportBtn"
-            >
-              Export
-            </button>
+            <div class="export-menu" id="exportMenu">
+              <button
+                type="button"
+                class="file-action-btn file-action-btn-primary export-menu-trigger"
+                id="exportMenuBtn"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="exportMenuPopover"
+              >
+                Export
+                <svg
+                  class="export-menu-chevron"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="export-menu-popover" id="exportMenuPopover" role="menu" hidden>
+                <button type="button" class="export-menu-item" role="menuitem" id="exportMdBtn">
+                  Download .md
+                </button>
+                <button type="button" class="export-menu-item" role="menuitem" id="exportHtmlBtn">
+                  Download .html
+                </button>
+              </div>
+            </div>
             <input
               type="file"
               id="importFileInput"
