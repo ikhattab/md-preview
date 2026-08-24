@@ -91,41 +91,12 @@
 
         <div class="header-controls" role="group" aria-label="Editor controls">
           <nav class="mobile-view-switcher" id="mobileViewSwitcher" aria-label="Toggle view">
-            <button class="view-tab active" data-view="editor" aria-pressed="true">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-              </svg>
+            <button class="view-tab active" data-view="editor" aria-pressed="true" data-tooltip="Editor">
+              <i data-lucide="pencil" width="16" height="16" aria-hidden="true"></i>
               <span class="view-tab-label">Editor</span>
             </button>
-            <button class="view-tab" data-view="preview" aria-pressed="false">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
+            <button class="view-tab" data-view="preview" aria-pressed="false" data-tooltip="Preview">
+              <i data-lucide="eye" width="16" height="16" aria-hidden="true"></i>
               <span class="view-tab-label">Preview</span>
             </button>
           </nav>
@@ -134,81 +105,39 @@
             id="scrollSyncToggle"
             aria-label="Toggle scroll sync"
             title="Sync scrolling (off)"
+            data-tooltip="Sync scrolling (off)"
             aria-pressed="false"
           >
-            <!-- Link icon (synced) -->
-            <svg
+            <i
+              data-lucide="link"
               class="sync-icon synced-icon"
-              xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
-            <!-- Unlink icon (not synced) -->
-            <svg
+            ></i>
+            <i
+              data-lucide="unlink"
               class="sync-icon unsynced-icon"
-              xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M18.84 12.25l1.72-1.71h-.02a5.004 5.004 0 0 0-.12-7.07 5.006 5.006 0 0 0-6.95 0l-1.72 1.71"
-              ></path>
-              <path
-                d="M5.17 11.75l-1.71 1.71a5.004 5.004 0 0 0 .12 7.07 5.006 5.006 0 0 0 6.95 0l1.71-1.71"
-              ></path>
-              <line x1="8" y1="2" x2="8" y2="5"></line>
-              <line x1="2" y1="8" x2="5" y2="8"></line>
-              <line x1="16" y1="19" x2="16" y2="22"></line>
-              <line x1="19" y1="16" x2="22" y2="16"></line>
-            </svg>
+            ></i>
           </button>
           <button
             class="lint-toggle"
             id="lintToggle"
             aria-label="Toggle markdown linting"
             title="Lint markdown (off)"
+            data-tooltip="Lint markdown (off)"
             aria-pressed="false"
           >
-            <!-- Warning/Check icon -->
-            <svg
+            <i
+              data-lucide="triangle-alert"
               class="lint-icon"
-              xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-              ></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
+            ></i>
             <span class="lint-count" id="lintCount" aria-live="polite"></span>
           </button>
           <div class="file-actions" role="group" aria-label="File actions">
@@ -223,22 +152,13 @@
                 aria-controls="exportMenuPopover"
               >
                 Export
-                <svg
+                <i
+                  data-lucide="chevron-down"
                   class="export-menu-chevron"
-                  xmlns="http://www.w3.org/2000/svg"
                   width="14"
                   height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
                   aria-hidden="true"
-                  focusable="false"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                ></i>
               </button>
               <div class="export-menu-popover" id="exportMenuPopover" role="menu" hidden>
                 <button type="button" class="export-menu-item" role="menuitem" id="exportMdBtn">
@@ -257,49 +177,27 @@
               tabindex="-1"
             />
           </div>
-          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-            <!-- Sun Icon -->
-            <svg
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+            data-tooltip="Toggle theme"
+          >
+            <i
+              data-lucide="sun"
               class="theme-icon light-icon"
-              xmlns="http://www.w3.org/2000/svg"
               width="20"
               height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
-              focusable="false"
-            >
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-            <!-- Moon Icon -->
-            <svg
+            ></i>
+            <i
+              data-lucide="moon"
               class="theme-icon dark-icon"
-              xmlns="http://www.w3.org/2000/svg"
               width="20"
               height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
               aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
+            ></i>
           </button>
         </div>
       </header>
@@ -308,23 +206,20 @@
         <section class="pane editor-pane" id="editorPane" aria-labelledby="editorHeading">
           <header class="pane-header">
             <h2 class="pane-title" id="editorHeading">Markdown</h2>
-            <button class="collapse-btn" id="collapseEditor" aria-label="Collapse editor">
-              <svg
+            <button
+              class="collapse-btn"
+              id="collapseEditor"
+              aria-label="Collapse editor"
+              title="Collapse editor"
+              data-tooltip="Collapse editor"
+            >
+              <i
+                data-lucide="chevron-left"
                 class="collapse-icon"
-                xmlns="http://www.w3.org/2000/svg"
                 width="16"
                 height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
                 aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              ></i>
             </button>
           </header>
           <div class="lint-panel" id="lintPanel" aria-live="polite" role="log">
@@ -398,6 +293,16 @@
           </button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog class="media-viewer" id="mediaViewerDialog" aria-label="Full size preview">
+      <button
+        type="button"
+        class="media-viewer-close"
+        id="mediaViewerClose"
+        aria-label="Close full size preview"
+      ></button>
+      <div class="media-viewer-stage" id="mediaViewerStage"></div>
     </dialog>
 
     <dialog class="export-dialog" id="exportDialog" aria-labelledby="exportDialogTitle">

@@ -10,7 +10,8 @@ import { dom } from './lib/dom.js';
 import { STORAGE_KEYS } from './lib/constants.js';
 import { getStorageItem } from './lib/storage.js';
 import { configureMarked, schedulePreviewUpdate } from './lib/preview.js';
-import { initGutterTooltips, updateLineGutter, syncGutterScroll } from './lib/gutter.js';
+import { updateLineGutter, syncGutterScroll } from './lib/gutter.js';
+import { initTooltips } from './lib/tooltip.js';
 import {
   debouncedLint,
   getCurrentLintWarnings,
@@ -43,6 +44,8 @@ import {
   saveContent,
 } from './lib/content.js';
 import { bindImportExportListeners } from './lib/import-export.js';
+import { renderStaticIcons } from './lib/icons.js';
+import { initMediaViewer } from './lib/media-viewer.js';
 
 const {
   editor,
@@ -148,8 +151,10 @@ function setupEventListeners() {
 }
 
 function init() {
+  renderStaticIcons();
+  initMediaViewer();
+  initTooltips();
   configureMarked();
-  initGutterTooltips();
   loadTheme();
   loadCollapseState();
   loadEditorWidth();

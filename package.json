@@ -36,6 +36,7 @@
     "dompurify": "^3.4.11",
     "highlight.js": "^11.11.1",
     "katex": "^0.17.0",
+    "lucide": "^1.34.0",
     "marked": "^18.0.5",
     "marked-highlight": "^2.2.4",
     "marked-katex-extension": "^5.1.10",

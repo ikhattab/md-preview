@@ -474,6 +474,8 @@ textarea:focus:not(:focus-visible) {
 .lint-item-icon {
   color: #d97706;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 [data-theme='dark'] .lint-item-icon {
@@ -999,6 +1001,25 @@ textarea:focus:not(:focus-visible) {
   border: 1px solid var(--border-color);
 }
 
+.prose img.preview-figure-img {
+  cursor: zoom-in;
+}
+
+.prose .preview-figure {
+  position: relative;
+  display: block;
+  margin: 1.5em auto;
+  max-width: 100%;
+}
+
+.prose .preview-figure.preview-figure-has-toolbar {
+  padding-top: 0.5rem;
+}
+
+.prose .preview-figure img {
+  margin: 0;
+}
+
 .prose img.img-load-error {
   display: none;
 }
@@ -1094,10 +1115,12 @@ textarea:focus:not(:focus-visible) {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.7rem;
-  font-family: var(--font-mono);
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  width: 1.75rem;
+  height: 1.75rem;
   color: var(--text-secondary);
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -1107,6 +1130,10 @@ textarea:focus:not(:focus-visible) {
     opacity 0.15s ease,
     color 0.15s ease,
     background 0.15s ease;
+}
+
+.prose .code-copy-btn svg {
+  display: block;
 }
 
 .prose pre:hover .code-copy-btn,
@@ -1249,15 +1276,20 @@ textarea:focus:not(:focus-visible) {
 }
 
 .mermaid-btn {
-  padding: 0.3rem 0.55rem;
-  font-size: 0.7rem;
-  font-family: var(--font-mono);
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  width: 1.75rem;
+  height: 1.75rem;
   color: var(--text-secondary);
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 0.25rem;
-  white-space: nowrap;
+}
+
+.mermaid-btn svg {
+  display: block;
 }
 
 .mermaid-btn:hover {
@@ -1290,6 +1322,107 @@ textarea:focus:not(:focus-visible) {
 [data-theme='dark'] .mermaid-error-container {
   background: rgba(248, 113, 113, 0.05);
   border-color: rgba(248, 113, 113, 0.2);
+}
+
+.preview-figure-toolbar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.preview-figure:hover .preview-figure-toolbar,
+.preview-figure:focus-within .preview-figure-toolbar {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .mermaid-toolbar,
+  .preview-figure-toolbar {
+    opacity: 1;
+  }
+}
+
+/* Media viewer (fullscreen lightbox) */
+.media-viewer {
+  margin: 0;
+  padding: 0;
+  border: none;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.media-viewer::backdrop {
+  background: rgba(44, 39, 34, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+[data-theme='dark'] .media-viewer::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.media-viewer-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 3.5rem 1.5rem 1.5rem;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.media-viewer-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.media-viewer-stage svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+.media-viewer-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+.media-viewer-close:hover {
+  background: var(--bg-tertiary);
+}
+
+.media-viewer-close:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
 }
 
 /* Toast notifications */
