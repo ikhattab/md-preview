@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @font-face {
+        font-family: 'Fraunces';
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url('../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-full-normal.woff2')
+          format('woff2');
+      }
+      @font-face {
+        font-family: 'Hanken Grotesk';
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url('../node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-500-normal.woff2')
+          format('woff2');
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2')
+          format('woff2');
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+
+      body {
+        background: #faf7f1;
+        color: #2c2722;
+        font-family: 'Hanken Grotesk', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .canvas {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        padding: 72px 96px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .canvas::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 720px 420px at 18% 12%, rgba(178, 90, 55, 0.06), transparent 70%),
+          radial-gradient(ellipse 640px 380px at 88% 88%, rgba(178, 90, 55, 0.04), transparent 72%);
+        pointer-events: none;
+      }
+
+      .preview-strip {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 1px 1fr;
+        gap: 0;
+        align-items: start;
+        max-width: 720px;
+      }
+
+      .divider {
+        background: #e6ddcd;
+        height: 88px;
+        margin-top: 6px;
+      }
+
+      .source {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 22px;
+        line-height: 1.65;
+        color: #a99e8d;
+        padding-right: 48px;
+      }
+
+      .source .accent {
+        color: #b25a37;
+      }
+
+      .rendered {
+        padding-left: 48px;
+        font-family: 'Fraunces', Georgia, serif;
+      }
+
+      .rendered h2 {
+        font-size: 34px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin-bottom: 10px;
+      }
+
+      .rendered p {
+        font-size: 22px;
+        color: #6b6256;
+        line-height: 1.4;
+      }
+
+      .rendered em {
+        font-style: italic;
+        color: #2c2722;
+      }
+
+      .brand {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .logo {
+        width: 52px;
+        height: 52px;
+        color: #b25a37;
+        flex-shrink: 0;
+      }
+
+      .brand-text h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 46px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 10px;
+      }
+
+      .brand-text p {
+        font-size: 22px;
+        font-weight: 500;
+        color: #6b6256;
+        letter-spacing: 0.01em;
+      }
+
+      .accent-bar {
+        position: relative;
+        width: 64px;
+        height: 4px;
+        border-radius: 999px;
+        background: #b25a37;
+        margin-top: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="preview-strip">
+        <div class="source">
+          <div><span class="accent">#</span> Write</div>
+          <div><span class="accent">*</span>preview<span class="accent">*</span></div>
+        </div>
+        <div class="divider" aria-hidden="true"></div>
+        <div class="rendered">
+          <h2>Write</h2>
+          <p><em>preview</em></p>
+        </div>
+      </div>
+
+      <div class="brand">
+        <svg
+          class="logo"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M9 13v-1h6v1" />
+          <path d="M12 12v6" />
+          <path d="M11 18h2" />
+        </svg>
+        <div class="brand-text">
+          <h1>mdfor.dev</h1>
+          <p>Instant markdown editor</p>
+          <div class="accent-bar"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
