@@ -1,6 +1,8 @@
-## mdfor.work
+## mdfor.dev
 
 A fast, private, browser-only markdown editor with live preview. Built as a single-page app that runs entirely in the client.
+
+Production: [https://mdfor.dev](https://mdfor.dev) (deployed via Cloudflare Pages from GitHub). **mdfor.work** redirects to **mdfor.dev**.
 
 ### Features
 
@@ -43,13 +45,25 @@ npm run preview  # serves ./dist at http://localhost:3000
 
 ### Deployment
 
-Build static assets and serve the `dist/` folder from any static host (Cloudflare Pages, Netlify, S3, nginx, etc.):
+This repo deploys automatically to **Cloudflare Pages** (`md-preview` project) on pushes to `main`:
+
+- Build command: `npm run build`
+- Output directory: `dist`
+- Custom domain: **https://mdfor.dev**
+
+For other static hosts (Netlify, S3, nginx, etc.), build and serve `dist/`:
 
 ```bash
 npm run build
 ```
 
 Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts that support it.
+
+**Cloudflare cutover (after merging rebrand):**
+
+1. **mdfor.dev** zone DNS: `www` CNAME → `md-preview-19t.pages.dev` (proxied) if `www.mdfor.dev` is on the Pages project.
+2. **mdfor.work** zone: Redirect Rule — hostname `mdfor.work` or `www.mdfor.work` → `https://mdfor.dev` (301, preserve path and query).
+3. Pages **Custom domains**: remove `mdfor.work` (and `www.mdfor.work` if present) so the zone redirect applies.
 
 ### Tech Stack
 

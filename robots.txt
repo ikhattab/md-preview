@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mdfor.work/sitemap.xml
+Sitemap: https://mdfor.dev/sitemap.xml
