@@ -4,6 +4,8 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 
 Production: [https://mdfor.dev](https://mdfor.dev) (deployed via Cloudflare Pages from GitHub). **mdfor.work** redirects to **mdfor.dev**.
 
+<video src=".github/assets/mdfordev-promo.mp4" controls width="100%"></video>
+
 ### Features
 
 - Live markdown preview powered by `marked` with `marked-highlight` and `DOMPurify` sanitization; syntax highlighting via lazy-loaded `highlight.js`
