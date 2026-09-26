@@ -16,11 +16,12 @@ npm run dev
 Before opening a pull request, run:
 
 ```bash
-npm run check   # ESLint + Prettier
-npm run build   # production build
+npm run check      # ESLint + Prettier
+npm run build      # production build
+npm run test:e2e   # Playwright smoke tests against the production build
 ```
 
-`npm run lint:fix` and `npm run format` fix most issues automatically.
+`npm run lint:fix` and `npm run format` fix most issues automatically. Before the first e2e run, install the browser with `npx playwright install chromium`.
 
 ## Guidelines
 
@@ -34,7 +35,7 @@ npm run build   # production build
 
 - Keep each PR focused on one change. For larger features, open an issue first to discuss the approach.
 - Use [Conventional Commits](https://www.conventionalcommits.org/) for the PR title, e.g. `fix(export): keep code block colors in PDF`. PRs are squash-merged, so the title becomes the commit message.
-- CI runs lint, format check, and build on every PR.
+- CI runs lint, format check, build, and the e2e smoke tests on every PR. If a change adds a new rendering feature, add it to `tests/e2e/fixtures/kitchen-sink.md` and assert on it in `tests/e2e/smoke.spec.js`.
 
 ## Reporting security issues
 

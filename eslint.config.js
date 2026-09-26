@@ -10,6 +10,17 @@ export default [
     },
   },
   {
+    files: ['playwright.config.js', 'tests/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ['app.js', 'lib/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
@@ -56,7 +67,7 @@ export default [
     },
   },
   {
-    ignores: ['node_modules/**', 'dist/**', '*.min.js'],
+    ignores: ['node_modules/**', 'dist/**', '*.min.js', 'test-results/**', 'playwright-report/**'],
   },
   eslintConfigPrettier,
 ];
