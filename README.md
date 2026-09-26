@@ -8,7 +8,7 @@ Production: [https://mdfor.dev](https://mdfor.dev) (deployed via Cloudflare Page
 
 - Live markdown preview powered by `marked` with `marked-highlight` and `DOMPurify` sanitization; syntax highlighting via lazy-loaded `highlight.js`
 - Import markdown files (`.md`, `.markdown`, `.txt`) with confirm-before-replace
-- Export markdown source (`.md`) or self-contained HTML with embedded styles and optional base64 images
+- Export markdown source (`.md`), self-contained HTML with embedded styles and optional base64 images, or PDF via the browser print dialog (Save as PDF)
 - KaTeX math and Mermaid diagrams loaded on demand
 - Light/dark theme toggle with Highlight.js theme switching
 - Local auto-save (content, theme, pane width, and collapse state stored in `localStorage` on your device only)

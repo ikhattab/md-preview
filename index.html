@@ -177,6 +177,9 @@
                 <button type="button" class="export-menu-item" role="menuitem" id="exportHtmlBtn">
                   Download .html
                 </button>
+                <button type="button" class="export-menu-item" role="menuitem" id="exportPdfBtn">
+                  Download .pdf
+                </button>
               </div>
             </div>
             <input
@@ -319,7 +322,7 @@
       <form method="dialog" class="export-dialog-form" id="exportDialogForm">
         <header class="export-dialog-header">
           <h2 class="export-dialog-title" id="exportDialogTitle">Export HTML</h2>
-          <p class="export-dialog-desc">
+          <p class="export-dialog-desc" id="exportDialogDesc">
             Download a self-contained HTML file with the same styles and rendered content.
           </p>
         </header>
@@ -345,7 +348,7 @@
           </select>
         </div>
 
-        <div class="export-dialog-field export-dialog-checkbox-field">
+        <div class="export-dialog-field export-dialog-checkbox-field" id="exportEmbedImagesField">
           <label class="export-dialog-checkbox-label">
             <input type="checkbox" id="exportEmbedImages" checked />
             <span>Embed images as base64</span>
