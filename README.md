@@ -99,6 +99,10 @@ Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts 
 - External images in markdown still load from their URLs when referenced.
 - If `localStorage` is unavailable, the app still works but won’t persist settings/content.
 
+### Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) to get started, and [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
 ### License
 
 [MIT](LICENSE) © Ihab Khattab
