@@ -27,8 +27,19 @@
     "editor",
     "live"
   ],
-  "author": "",
+  "author": "Ihab Khattab <ihab@hey.com>",
   "license": "MIT",
+  "homepage": "https://mdfor.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikhattab/md-preview.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ikhattab/md-preview/issues"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",
     "@fontsource/hanken-grotesk": "^5.2.8",

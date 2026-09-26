@@ -9,6 +9,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.cursor/
+.remember/
 
 # Logs
 *.log

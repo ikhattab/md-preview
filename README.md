@@ -19,7 +19,7 @@ Production: [https://mdfor.dev](https://mdfor.dev) (deployed via Cloudflare Page
 
 ### Quick Start
 
-Prerequisites: Node.js 18+ and npm.
+Prerequisites: Node.js 20.19+ (or 22.12+) and npm.
 
 ```bash
 npm install
@@ -59,12 +59,6 @@ npm run build
 
 Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts that support it.
 
-**Cloudflare cutover (after merging rebrand):**
-
-1. **mdfor.dev** zone DNS: `www` CNAME → `md-preview-19t.pages.dev` (proxied) if `www.mdfor.dev` is on the Pages project.
-2. **mdfor.work** zone: Redirect Rule — hostname `mdfor.work` or `www.mdfor.work` → `https://mdfor.dev` (301, preserve path and query).
-3. Pages **Custom domains**: remove `mdfor.work` (and `www.mdfor.work` if present) so the zone redirect applies.
-
 ### Tech Stack
 
 - HTML/CSS/JS (no UI framework)
@@ -86,11 +80,15 @@ Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts 
 - `lib/theme.js` – Theme load/toggle
 - `lib/layout.js` – Resize, collapse, mobile view, scroll sync
 - `lib/content.js` – Auto-save and content load
-- `lib/import-export.js` – Import and HTML/Markdown export
+- `lib/import-export.js` – Import and Markdown/HTML/PDF export
 - `lib/lazy-vendors.js` – Lazy-loaded heavy dependencies (hljs, KaTeX, Mermaid)
+- `lib/media-viewer.js` – Fullscreen image and diagram viewer
+- `lib/icons.js` – Lucide icon helpers
+- `lib/tooltip.js` – Viewport-aware tooltips
 - `lib/fonts.js` – Self-hosted font imports
 - `styles.css` – Theming, layout, responsive styles
 - `vite.config.js` – Build configuration
+- `scripts/og-image.html` – Source page for the social preview image
 - `_headers` – Cache headers for static hosting
 - `site.webmanifest` – Web app manifest metadata
 
@@ -100,3 +98,7 @@ Cache headers for hashed assets are defined in [`_headers`](_headers) for hosts 
 - All scripts, styles, and fonts are served from the same origin (no CDN requests).
 - External images in markdown still load from their URLs when referenced.
 - If `localStorage` is unavailable, the app still works but won’t persist settings/content.
+
+### License
+
+[MIT](LICENSE) © Ihab Khattab
