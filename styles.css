@@ -204,6 +204,7 @@ button:focus-visible,
 .collapse-btn:focus-visible,
 .scroll-sync-toggle:focus-visible,
 .theme-toggle:focus-visible,
+.repo-link:focus-visible,
 .file-action-btn:focus-visible,
 .resize-handle:focus-visible {
   outline: 2px solid var(--link-color);
@@ -229,7 +230,8 @@ textarea:focus:not(:focus-visible) {
 }
 
 .theme-toggle,
-.scroll-sync-toggle {
+.scroll-sync-toggle,
+.repo-link {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,7 +242,8 @@ textarea:focus:not(:focus-visible) {
 }
 
 .theme-toggle:hover,
-.scroll-sync-toggle:hover {
+.scroll-sync-toggle:hover,
+.repo-link:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
 }
