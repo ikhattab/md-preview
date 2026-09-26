@@ -4,7 +4,7 @@ A fast, private, browser-only markdown editor with live preview. Built as a sing
 
 Production: [https://mdfor.dev](https://mdfor.dev) (deployed via Cloudflare Pages from GitHub). **mdfor.work** redirects to **mdfor.dev**.
 
-<video src="https://github.com/ikhattab/md-preview/releases/download/readme-demo-1/mdfordev-promo.mp4" controls width="100%" muted playsinline poster="https://raw.githubusercontent.com/ikhattab/md-preview/main/og-image.png"></video>
+https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 
 ### Features
 
