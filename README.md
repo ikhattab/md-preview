@@ -43,6 +43,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 
 - Syntax-highlighted code blocks via [highlight.js](https://highlightjs.org/), themed to match light or dark mode
 - Math with [KaTeX](https://katex.org/) and diagrams with [Mermaid](https://mermaid.js.org/)
+- YAML frontmatter at the top of a file shown as a small metadata table, like GitHub
 - Fullscreen viewer for images and diagrams
 - Mermaid diagram toolbar to view full screen, copy as PNG, or download as PNG
 - All rendered HTML sanitized with [DOMPurify](https://github.com/cure53/DOMPurify)
@@ -161,6 +162,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/storage.js`                | `localStorage` helpers                                   |
 | `lib/utils.js`                  | Debounce, throttle, and string helpers                   |
 | `lib/preview.js`                | Markdown parsing, sanitization, Mermaid, preview updates |
+| `lib/frontmatter.js`            | YAML frontmatter detection and metadata table            |
 | `lib/gutter.js`                 | Line-number gutter                                       |
 | `lib/lint.js`                   | Lint rules and panel UI                                  |
 | `lib/theme.js`                  | Theme loading and toggling                               |

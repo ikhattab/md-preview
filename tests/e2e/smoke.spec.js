@@ -54,7 +54,7 @@ test('renders every supported markdown feature', async ({ page }) => {
   await expect(wrapped.locator('br')).toHaveCount(0);
   await expect(preview.locator('p', { hasText: 'First line' }).locator('br')).toHaveCount(1);
 
-  await expect(preview.locator('.table-wrap table td').first()).toHaveText('alpha');
+  await expect(preview.locator(':scope > .table-wrap table td').first()).toHaveText('alpha');
   await expect(preview.locator('input[type="checkbox"]')).toHaveCount(2);
 
   await expect(preview.locator('pre code.language-js .hljs-keyword')).toHaveText('const');
@@ -93,6 +93,43 @@ test('renders GitHub alerts with a title and distinct color in both themes', asy
   const darkColors = await readAlertColors(preview);
   expectDistinctAlertColors(darkColors);
   expect(darkColors).not.toEqual(lightColors);
+});
+
+test('renders YAML frontmatter as metadata instead of a rule and heading', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const frontmatter = preview.locator(':scope > .frontmatter:first-child');
+
+  await expect(frontmatter.locator('th')).toHaveText(['title', 'tags', 'authors']);
+  await expect(frontmatter.locator('td')).toHaveText(['Smoke Test', 'alpha, beta', 'Ada, Grace']);
+  await expect(preview.locator('hr')).toHaveCount(1);
+  await expect(preview.locator('h2')).toHaveText(['Links']);
+
+  await page.locator('#editor').fill('---\nNot frontmatter\n');
+  await expect(preview.locator('hr')).toHaveCount(1);
+  await expect(preview.locator('.frontmatter')).toHaveCount(0);
+
+  await page.locator('#editor').fill('---\n- a\n- b\n---\n\nBody\n');
+  await expect(preview.locator('pre.frontmatter code')).toHaveText('- a\n- b');
+  await expect(preview.locator('hr')).toHaveCount(0);
+});
+
+test('lints frontmatter documents without flagging the YAML', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const editor = page.locator('#editor');
+  await page.locator('#lintToggle').click();
+
+  await editor.fill('---\nseo:\n  description: Nested\n#no-space comment\n---\nIntro paragraph.\n');
+  await expect(preview.locator('.frontmatter td.frontmatter-raw')).toHaveText(
+    'description: Nested'
+  );
+  await expect(preview.locator('h1, h2, hr')).toHaveCount(0);
+  await expect(page.locator('#lintList .lint-item-line')).toHaveText(['L6']);
+  await expect(page.locator('#lintList .lint-item-message')).toHaveText([
+    'MD041: First line should be a top-level heading',
+  ]);
+
+  await editor.fill('---\ntitle: Hello\n---\nIntro paragraph.\n');
+  await expect(page.locator('#lintList .lint-item-message')).toHaveText(['No issues found']);
 });
 
 test('sanitizes untrusted HTML', async ({ page }) => {
