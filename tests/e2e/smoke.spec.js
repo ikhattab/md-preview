@@ -2,6 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 
 const fixture = await readFile(new URL('./fixtures/kitchen-sink.md', import.meta.url), 'utf8');
+const png = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64'
+);
 
 const ALERT_TITLES = ['Note', 'Tip', 'Important', 'Warning', 'Caution'];
 
@@ -274,11 +278,45 @@ test('serves the production Content Security Policy and fails on violations', as
   errors = [];
 });
 
+test('loads every image before printing a long PDF export', async ({ page }) => {
+  const origin = 'https://images.example';
+  // The hanging image is never fulfilled, so its request stays pending.
+  await page.route(`${origin}/**`, (route) => {
+    if (route.request().url() === `${origin}/hang.png`) return;
+    route.fulfill({ contentType: 'image/png', body: png });
+  });
+
+  await page.addInitScript(() => {
+    window.print = () => {
+      window.top.__printedImages = [...document.images].map(
+        (img) => img.complete && img.naturalWidth > 0
+      );
+    };
+  });
+
+  const filler = Array.from({ length: 30 }, (_, i) => `Filler paragraph ${i}.`).join('\n\n');
+  const imageCount = 24;
+  const markdown = Array.from(
+    { length: imageCount },
+    (_, i) => `![image ${i}](${origin}/image-${i}.png)\n\n${filler}`
+  ).join('\n\n');
+
+  await page
+    .locator('#editor')
+    .fill(`# Long document\n\n${markdown}\n\n![never loads](${origin}/hang.png)\n`);
+  await expect(page.locator('#preview img[alt="image 0"]')).toBeVisible();
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportPdfBtn').click();
+  await page.locator('#exportDownloadBtn').click();
+
+  // The image that never responds must not block printing past the per-image timeout.
+  await expect
+    .poll(() => page.evaluate(() => window.__printedImages), { timeout: 15_000 })
+    .toEqual([...Array(imageCount).fill(true), false]);
+});
+
 test('embeds remote images in HTML export and reports the ones it could not', async ({ page }) => {
-  const png = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-    'base64'
-  );
   const corsUrl = 'https://images.example/cors.png';
   const noCorsUrl = 'https://images.example/no-cors.png';
   // Playwright adds CORS headers to fulfilled responses unless one is already set,
