@@ -44,6 +44,7 @@ import {
   saveContent,
 } from './lib/content.js';
 import { bindImportExportListeners } from './lib/import-export.js';
+import { bindShortcuts } from './lib/shortcuts.js';
 import { bindHeaderMenuListeners } from './lib/header-menu.js';
 import { renderStaticIcons } from './lib/icons.js';
 import { initMediaViewer } from './lib/media-viewer.js';
@@ -91,6 +92,7 @@ function setupEventListeners() {
   });
 
   bindImportExportListeners();
+  bindShortcuts();
   bindHeaderMenuListeners();
   bindPreviewLinkListeners();
 
