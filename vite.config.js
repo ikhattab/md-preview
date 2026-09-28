@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { cpSync, existsSync } from 'fs';
 import { join } from 'path';
 import { cloudflareHeaders } from './scripts/cloudflare-headers.js';
+import { serviceWorker } from './scripts/service-worker.js';
 
 const STATIC_FILES = [
   '_headers',
@@ -49,5 +50,6 @@ export default defineConfig({
       },
     },
     cloudflareHeaders(),
+    serviceWorker(),
   ],
 });

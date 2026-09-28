@@ -27,6 +27,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 
 - **Private by design.** Everything happens client-side. Content and settings are stored only in your browser's `localStorage`.
 - **Fast to open.** No UI framework, and heavy renderers (syntax highlighting, math, diagrams) load only when your document needs them.
+- **Works offline.** After one visit, the app opens without a network connection, including the renderers you've already used.
 - **Self-contained.** Scripts, styles, and fonts are bundled and served from the same origin. No third-party CDNs.
 
 ## Features
@@ -37,6 +38,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 - Line-number gutter and optional scroll sync between editor and preview
 - Built-in markdown linting with a clickable panel that jumps to the offending line
 - Auto-save of your document and preferences (theme, pane width, collapsed editor, scroll sync, linting, remote image blocking)
+- Offline use through a service worker; when a new version is deployed, an **Update available** toast offers a reload instead of swapping code mid-edit
 - A rich starter document that shows off what the editor can render
 
 ### Rendering
@@ -144,7 +146,7 @@ Pushes to `main` deploy automatically to **Cloudflare Pages** (the `md-preview` 
 - Build command: `npm run build`
 - Output directory: `dist`
 
-The output is a plain static site, so any static host works (Netlify, S3, nginx, and so on): run `npm run build` and serve `dist/`. [`_headers`](_headers) sets long-lived caching for hashed assets and the Content Security Policy on hosts that support that file format; on other hosts, configure the equivalent headers yourself.
+The output is a plain static site, so any static host works (Netlify, S3, nginx, and so on): run `npm run build` and serve `dist/`. [`_headers`](_headers) sets long-lived caching for hashed assets and the Content Security Policy on hosts that support that file format; on other hosts, configure the equivalent headers yourself. Serve `/sw.js` with `Cache-Control: no-cache` (not the long-lived rules), or returning users won't see new versions promptly.
 
 ## Architecture
 
@@ -172,13 +174,16 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/content.js`                | Auto-save and content loading                            |
 | `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
 | `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
+| `lib/offline.js`                | Service worker registration and the update prompt        |
 | `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
 | `lib/remote-images.js`          | Remote image blocking and placeholders                   |
 | `lib/icons.js`                  | Lucide icon helpers                                      |
 | `lib/tooltip.js`                | Viewport-aware tooltips                                  |
 | `lib/fonts.js`                  | Self-hosted font imports                                 |
+| `sw.js`                         | Service worker for offline use                           |
 | `vite.config.js`                | Build configuration                                      |
 | `scripts/cloudflare-headers.js` | Applies `_headers` in `vite preview`                     |
+| `scripts/service-worker.js`     | Emits `sw.js` with the build's file lists                |
 | `scripts/og-image.html`         | Source page for the social preview image                 |
 | `_headers`                      | Cache and security headers for static hosting            |
 | `site.webmanifest`              | Web app manifest                                         |
