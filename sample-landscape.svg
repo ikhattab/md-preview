@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="320" viewBox="0 0 800 320" role="img" aria-label="Sample landscape">
+  <rect width="800" height="320" fill="#e7dfd0"/>
+  <circle cx="610" cy="96" r="38" fill="#d9c9ad"/>
+  <path d="M0 236 C 120 176 220 196 320 220 S 540 164 800 206 V 320 H 0 Z" fill="#d6cab5"/>
+  <path d="M0 270 C 150 232 280 250 420 266 S 660 236 800 258 V 320 H 0 Z" fill="#c7b89f"/>
+  <text x="400" y="150" fill="#6b6256" font-family="Georgia, 'Times New Roman', serif" font-size="44" text-anchor="middle">mdfor.dev</text>
+</svg>

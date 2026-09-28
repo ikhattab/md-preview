@@ -12,6 +12,7 @@ const STATIC_FILES = [
   'favicon-96x96.png',
   'apple-touch-icon.png',
   'og-image.png',
+  'sample-landscape.svg',
   'web-app-manifest-192x192.png',
   'web-app-manifest-512x512.png',
 ];
