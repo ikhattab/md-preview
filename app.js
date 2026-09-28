@@ -47,6 +47,7 @@ import { bindImportExportListeners } from './lib/import-export.js';
 import { bindHeaderMenuListeners } from './lib/header-menu.js';
 import { renderStaticIcons } from './lib/icons.js';
 import { initMediaViewer } from './lib/media-viewer.js';
+import { registerServiceWorker } from './lib/offline.js';
 import { loadRemoteImagePreference, toggleRemoteImageBlocking } from './lib/remote-images.js';
 
 const {
@@ -180,6 +181,7 @@ function init() {
   setupEventListeners();
   initMobileView();
   runInitialLint();
+  registerServiceWorker();
 }
 
 if (document.readyState === 'loading') {

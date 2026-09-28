@@ -21,6 +21,16 @@ export default [
     },
   },
   {
+    files: ['sw.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+  },
+  {
     files: ['app.js', 'lib/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
