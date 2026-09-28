@@ -521,6 +521,67 @@ test('undoes an import that replaced the document', async ({ page }) => {
   await expect(editor).toHaveValue(/More/);
 });
 
+function dragFile(page, { name, type, content = '' }) {
+  return page.evaluateHandle(
+    ({ name, type, content }) => {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(new File([content], name, { type }));
+      return dataTransfer;
+    },
+    { name, type, content }
+  );
+}
+
+test('imports a file dropped anywhere in the window', async ({ page }) => {
+  const overlay = page.locator('#dropOverlay');
+  const editor = page.locator('#editor');
+
+  // The editor is hidden, so the drop starts over the preview.
+  await page.locator('#collapseEditor').click();
+  let dataTransfer = await dragFile(page, {
+    name: 'notes.md',
+    type: 'text/markdown',
+    content: '# Dropped notes\n',
+  });
+  await page.locator('#preview').dispatchEvent('dragenter', { dataTransfer });
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toContainText('Drop to open');
+  await overlay.dispatchEvent('dragover', { dataTransfer });
+  await overlay.dispatchEvent('drop', { dataTransfer });
+  await expect(overlay).toBeHidden();
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(editor).toHaveValue('# Dropped notes\n');
+  await expect(page.locator('#preview h1')).toHaveText('Dropped notes');
+
+  // Leaving the window hides the overlay without importing.
+  dataTransfer = await dragFile(page, { name: 'other.md', type: 'text/markdown' });
+  await page.locator('.header').dispatchEvent('dragenter', { dataTransfer });
+  await expect(overlay).toBeVisible();
+  await overlay.dispatchEvent('dragleave', { dataTransfer });
+  await expect(overlay).toBeHidden();
+
+  // Files that clearly aren't markdown are refused before they're dropped.
+  dataTransfer = await dragFile(page, { name: 'photo.png', type: 'image/png' });
+  await page.locator('.header').dispatchEvent('dragenter', { dataTransfer });
+  await expect(overlay).toHaveAttribute('data-state', 'unsupported');
+  await expect(overlay).toContainText("Can't open this file");
+  await overlay.dispatchEvent('drop', { dataTransfer });
+  await expect(overlay).toBeHidden();
+  await expect(page.locator('#importConfirmDialog')).toBeHidden();
+  await expect(editor).toHaveValue('# Dropped notes\n');
+});
+
+test('leaves text dragged inside the editor alone', async ({ page }) => {
+  const dataTransfer = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', 'moved text');
+    return dt;
+  });
+  await page.locator('#editor').dispatchEvent('dragenter', { dataTransfer });
+  await page.locator('#editor').dispatchEvent('dragover', { dataTransfer });
+  await expect(page.locator('#dropOverlay')).toBeHidden();
+});
+
 const HEADER_CONTROLS = [
   '#lintToggle',
   '#remoteImagesToggle',
