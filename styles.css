@@ -1819,6 +1819,42 @@ textarea:focus:not(:focus-visible) {
   transform: translateX(-50%) translateY(0);
 }
 
+.md-toast-has-action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.35rem;
+  padding-inline-end: 0.35rem;
+  /* left: 50% would otherwise cap the shrink-to-fit width at half the viewport. */
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+}
+
+.md-toast-has-action.visible {
+  pointer-events: auto;
+}
+
+.md-toast-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.md-toast-action {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.md-toast-action:hover {
+  background: var(--accent-glow);
+}
+
 /* ─────────────────────────────────────────────────────────────────
    Export Dialog
    ───────────────────────────────────────────────────────────────── */
