@@ -168,6 +168,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/lint.js`                   | Lint rules and panel UI                                  |
 | `lib/theme.js`                  | Theme loading and toggling                               |
 | `lib/layout.js`                 | Resize, collapse, mobile view, scroll sync               |
+| `lib/header-menu.js`            | Mobile overflow menu for the header controls             |
 | `lib/content.js`                | Auto-save and content loading                            |
 | `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
 | `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |

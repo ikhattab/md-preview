@@ -482,3 +482,135 @@ test('keeps blocking images that were not on screen when the reader loaded image
   await expect(page.locator('.blocked-image-load')).toHaveCount(0);
   expect(requests).not.toContain('/new.png');
 });
+
+const HEADER_CONTROLS = [
+  '#lintToggle',
+  '#remoteImagesToggle',
+  '#importBtn',
+  '#exportMenuBtn',
+  '#themeToggle',
+  '.repo-link',
+];
+
+test('keeps every header control inline on desktop', async ({ page }) => {
+  await expect(page.locator('#headerMenuBtn')).toBeHidden();
+  for (const selector of HEADER_CONTROLS) {
+    await expect(page.locator(selector)).toBeInViewport({ ratio: 1 });
+  }
+});
+
+test.describe('mobile header', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  async function expectNoHorizontalScroll(page) {
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+    ).toBe(0);
+  }
+
+  test('fits the screen and reaches every control from the menu in both themes', async ({
+    page,
+  }) => {
+    const menuBtn = page.locator('#headerMenuBtn');
+    const menu = page.locator('#headerMenu');
+
+    for (const theme of ['light', 'dark']) {
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      await expect(menu).toBeHidden();
+      await expectNoHorizontalScroll(page);
+
+      await menuBtn.click();
+      await expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
+      for (const selector of HEADER_CONTROLS) {
+        await expect(page.locator(selector)).toBeInViewport({ ratio: 1 });
+      }
+      await expectNoHorizontalScroll(page);
+
+      await page.locator('#themeToggle').click();
+      await expect(menu).toBeHidden();
+      await expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+      await expect(menuBtn).toBeFocused();
+    }
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    await menuBtn.click();
+    for (const selector of ['#lintToggle', '#remoteImagesToggle']) {
+      const toggle = page.locator(selector);
+      await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      await expect(menu).toBeVisible();
+    }
+    await expect(page.locator('#lintPanel')).toBeVisible();
+  });
+
+  test('opens and closes the menu with the keyboard', async ({ page }) => {
+    const menuBtn = page.locator('#headerMenuBtn');
+    const menu = page.locator('#headerMenu');
+
+    await menuBtn.focus();
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeVisible();
+    await expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#lintToggle')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+    await expect(menuBtn).toBeFocused();
+
+    // Escape closes the Export submenu before the header menu.
+    await page.keyboard.press('Enter');
+    await page.locator('#exportMenuBtn').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#exportMdBtn')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#exportMenuPopover')).toBeHidden();
+    await expect(page.locator('#exportMenuBtn')).toBeFocused();
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(menuBtn).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await page.locator('.repo-link').focus();
+    await page.keyboard.press('Tab');
+    await expect(menu).toBeHidden();
+    await expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('imports and exports from the menu', async ({ page }) => {
+    const menuBtn = page.locator('#headerMenuBtn');
+    const menu = page.locator('#headerMenu');
+
+    await menuBtn.click();
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('#importBtn').click();
+    const fileChooser = await fileChooserPromise;
+    await expect(menu).toBeHidden();
+    await fileChooser.setFiles({
+      name: 'notes.md',
+      mimeType: 'text/markdown',
+      buffer: Buffer.from('# Imported notes\n'),
+    });
+    await page.locator('#importConfirmReplaceBtn').click();
+    await expect(page.locator('#editor')).toHaveValue('# Imported notes\n');
+
+    await menuBtn.click();
+    await page.locator('#exportMenuBtn').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#exportMdBtn').click();
+    const download = await downloadPromise;
+    await expect(menu).toBeHidden();
+    expect(download.suggestedFilename()).toBe('notes.md');
+    expect(await readFile(await download.path(), 'utf8')).toBe('# Imported notes\n');
+
+    await menuBtn.click();
+    await page.locator('#exportMenuBtn').click();
+    await page.locator('#exportHtmlBtn').click();
+    await expect(page.locator('#exportDialog')).toBeVisible();
+    await expect(menu).toBeHidden();
+    await page.locator('#exportCancelBtn').click();
+    await expect(menuBtn).toBeFocused();
+  });
+});

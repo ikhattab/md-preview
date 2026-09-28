@@ -246,6 +246,7 @@ textarea:focus:not(:focus-visible) {
 .theme-toggle,
 .scroll-sync-toggle,
 .remote-images-toggle,
+.header-menu-btn,
 .repo-link {
   display: flex;
   align-items: center;
@@ -259,6 +260,8 @@ textarea:focus:not(:focus-visible) {
 .theme-toggle:hover,
 .scroll-sync-toggle:hover,
 .remote-images-toggle:hover,
+.header-menu-btn:hover,
+.header-menu-btn[aria-expanded='true'],
 .repo-link:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
@@ -357,7 +360,9 @@ textarea:focus:not(:focus-visible) {
 }
 
 [data-theme='light'] .dark-icon,
-[data-theme='dark'] .light-icon {
+[data-theme='dark'] .light-icon,
+[data-theme='light'] .theme-value-dark,
+[data-theme='dark'] .theme-value-light {
   display: none;
 }
 
@@ -461,6 +466,203 @@ textarea:focus:not(:focus-visible) {
 
 .lint-count:empty {
   display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Header Menu (mobile overflow for the header controls)
+   ───────────────────────────────────────────────────────────────── */
+.header-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-menu-btn,
+.header-menu-label,
+.header-menu-value,
+.header-menu-icon,
+.header-menu-switch {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .header {
+    position: relative;
+    padding: 0.8rem 1rem;
+  }
+
+  .header-controls {
+    gap: 0.5rem;
+  }
+
+  .header-menu-btn {
+    display: flex;
+  }
+
+  .header-menu {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0.5rem;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.125rem;
+    width: min(16rem, calc(100vw - 1rem));
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+    padding: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+  }
+
+  [data-theme='dark'] .header-menu {
+    box-shadow: 0 4px 16px rgb(0 0 0 / 35%);
+  }
+
+  .header-menu.open {
+    display: flex;
+  }
+
+  .header-menu .lint-toggle,
+  .header-menu .remote-images-toggle,
+  .header-menu .file-action-btn,
+  .header-menu .theme-toggle,
+  .header-menu .repo-link {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    height: auto;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+    text-decoration: none;
+    border-radius: 0.375rem;
+  }
+
+  .header-menu .lint-toggle:hover,
+  .header-menu .remote-images-toggle:hover,
+  .header-menu .file-action-btn:hover,
+  .header-menu .theme-toggle:hover,
+  .header-menu .repo-link:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    filter: none;
+  }
+
+  .header-menu :focus-visible {
+    outline-offset: -2px;
+  }
+
+  .header-menu .theme-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .header-menu .file-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.125rem;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .header-menu .file-action-btn,
+  .header-menu .file-action-btn-primary {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .header-menu .export-menu-chevron {
+    margin-left: auto;
+  }
+
+  .header-menu .export-menu-popover {
+    position: static;
+    min-width: 0;
+    padding: 0 0 0 1.875rem;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .header-menu .export-menu-item {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .header-menu-label {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    color: var(--text-primary);
+  }
+
+  .header-menu-value {
+    display: inline;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .header-menu-icon {
+    display: block;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+  }
+
+  .header-menu-switch {
+    position: relative;
+    display: block;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 1.125rem;
+    border: 1px solid var(--border-hover);
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .header-menu-switch::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease;
+  }
+
+  [aria-pressed='true'] > .header-menu-switch {
+    border-color: var(--link-color);
+    background: var(--link-color);
+  }
+
+  [aria-pressed='true'] > .header-menu-switch::after {
+    transform: translateX(0.875rem);
+  }
+}
+
+/* Keep the header on one line on the narrowest phones; the wordmark stays for screen readers. */
+@media (max-width: 374px) {
+  .logo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
 }
 
 /* Lint Panel */
