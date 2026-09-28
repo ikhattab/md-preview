@@ -2,6 +2,13 @@
 
 Some **bold**, _italic_, `inline code` and a [link](https://example.com).
 
+This paragraph is hard-wrapped
+across several lines
+and renders as one line.
+
+First line with a hard break\
+second line.
+
 | Name  | Value |
 | ----- | ----- |
 | alpha | 1     |
