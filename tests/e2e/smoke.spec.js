@@ -483,6 +483,44 @@ test('keeps blocking images that were not on screen when the reader loaded image
   expect(requests).not.toContain('/new.png');
 });
 
+async function importReplacing(page, name, content) {
+  await page.locator('#importFileInput').setInputFiles({
+    name,
+    mimeType: 'text/markdown',
+    buffer: Buffer.from(content),
+  });
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(page.locator('#editor')).toHaveValue(content);
+}
+
+test('undoes an import that replaced the document', async ({ page }) => {
+  const editor = page.locator('#editor');
+  const toast = page.locator('#mdToast');
+  const undo = toast.getByRole('button', { name: 'Undo' });
+
+  await importReplacing(page, 'notes.md', '# Imported notes\n');
+  await expect(toast).toHaveAttribute('role', 'status');
+  await expect(toast).toContainText('Replaced with notes.md');
+
+  // Reachable from the keyboard, and focus returns to the editor once it's used.
+  await undo.focus();
+  await page.keyboard.press('Enter');
+  await expect(editor).toHaveValue(fixture);
+  await expect(editor).toBeFocused();
+  await expect(toast).toHaveText('Import undone');
+  await expect(page.locator('#preview h1')).toHaveText('Smoke Test');
+
+  await page.reload();
+  await expect(editor).toHaveValue(fixture);
+
+  // Undo is withdrawn once the imported document is edited.
+  await importReplacing(page, 'notes.md', '# Imported notes\n');
+  await expect(undo).toBeVisible();
+  await editor.pressSequentially('More');
+  await expect(undo).toBeHidden();
+  await expect(editor).toHaveValue(/More/);
+});
+
 const HEADER_CONTROLS = [
   '#lintToggle',
   '#remoteImagesToggle',
