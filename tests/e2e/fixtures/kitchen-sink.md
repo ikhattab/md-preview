@@ -9,6 +9,8 @@ and renders as one line.
 First line with a hard break\
 second line.
 
+Jump to [the links section](#links) or [the second repeat](#repeat-1).
+
 | Name  | Value |
 | ----- | ----- |
 | alpha | 1     |
@@ -32,6 +34,12 @@ graph TD
 ```
 
 ![pixel](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)
+
+## Links
+
+### Repeat
+
+### Repeat
 
 <script>window.__xss = 'script';</script>
 <div onclick="window.__xss = 'handler'">untrusted div</div>
