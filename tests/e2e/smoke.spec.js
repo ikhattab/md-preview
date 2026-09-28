@@ -652,6 +652,25 @@ test('hides shortcut hints on small screens', async ({ page }) => {
   await expect(page.locator('#exportMdBtn .shortcut-hint')).toBeHidden();
 });
 
+test.describe('on macOS', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36',
+  });
+
+  test('uses Cmd for shortcuts', async ({ page }) => {
+    await expect(page.locator('#importBtn')).toHaveAttribute('data-tooltip', /\(⌘O\)$/);
+
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.keyboard.press('Meta+o');
+    await fileChooserPromise;
+
+    // Ctrl alone must not trigger anything.
+    await page.keyboard.press('Control+\\');
+    await expect(page.locator('#editorPane')).not.toHaveClass(/collapsed/);
+  });
+});
+
 const HEADER_CONTROLS = [
   '#lintToggle',
   '#remoteImagesToggle',
