@@ -360,3 +360,125 @@ test('embeds remote images in HTML export and reports the ones it could not', as
   await expect(page.locator('img[alt="cors"]')).toHaveAttribute('src', /^data:image\/png;base64,/);
   await expect(page.locator('img[alt="no-cors"]')).toHaveAttribute('src', noCorsUrl);
 });
+
+const IMAGE_ORIGIN = 'https://images.example';
+
+async function routeRemoteImages(page) {
+  const requests = [];
+  await page.route(`${IMAGE_ORIGIN}/**`, (route) => {
+    requests.push(new URL(route.request().url()).pathname);
+    route.fulfill({ contentType: 'image/png', body: png });
+  });
+  return requests;
+}
+
+// Everything in the preview that could trigger a fetch, leaving out the placeholders' hover titles.
+function remoteReferences(page) {
+  return page.locator('#preview').evaluate((el, origin) => {
+    const values = [...el.querySelectorAll('*')].flatMap((node) =>
+      [...node.attributes].filter((attr) => attr.name !== 'title').map((attr) => attr.value)
+    );
+    values.push(...[...el.querySelectorAll('style')].map((style) => style.textContent));
+    return values.filter((value) => value.includes(origin));
+  }, IMAGE_ORIGIN);
+}
+
+async function turnOnImageBlocking(page) {
+  const toggle = page.locator('#remoteImagesToggle');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+}
+
+test('blocks remote images until the reader loads them', async ({ page }) => {
+  const requests = await routeRemoteImages(page);
+  const origin = IMAGE_ORIGIN;
+  const markdown = [
+    '# Remote images',
+    `[![badge](${origin}/markdown.png)](https://example.com)`,
+    `<img alt="raw html" src="${origin}/html.png">`,
+    `<img srcset="${origin}/srcset.png 2x">`,
+    `<picture><source srcset="${origin}/source.png"><img alt="local" src="/sample-landscape.svg"></picture>`,
+    `<div style="background-image: url('${origin}/style-attr.png'); height: 4px"></div>`,
+    `<style>.probe { background: url(${origin}/style-element.png); height: 4px }</style><div class="probe"></div>`,
+    `<svg width="4" height="4"><image href="${origin}/svg.png" width="4" height="4"/></svg>`,
+    `<video poster="${origin}/poster.png" width="4" height="4"></video>`,
+    '```mermaid\ngraph TD\n  A[Start] --> B[End]\n```',
+    `\`\`\`mermaid\nflowchart TD\n  P@{ img: "${origin}/mermaid.png", w: 4, h: 4 }\n\`\`\``,
+  ].join('\n\n');
+
+  await turnOnImageBlocking(page);
+  const preview = page.locator('#preview');
+  const placeholders = preview.locator('.blocked-image');
+  await page.locator('#editor').fill(markdown);
+  await expect(placeholders).toHaveCount(4);
+  await expect(placeholders.nth(0)).toContainText('badge');
+  await expect(placeholders.nth(1)).toContainText('raw html');
+  await expect(placeholders.nth(2)).toContainText('Image from images.example');
+  await expect(placeholders.nth(3)).toContainText('Diagram may load remote images');
+  await expect(preview.locator('.preview-figure img[alt="local"]')).toBeVisible();
+  await expect(preview.locator('.mermaid.mermaid-rendered > svg')).toHaveCount(1);
+  expect(await remoteReferences(page)).toEqual([]);
+  expect(requests).toEqual([]);
+
+  await page.reload();
+  await expect(page.locator('#remoteImagesToggle')).toHaveAttribute('aria-pressed', 'true');
+  await expect(placeholders).toHaveCount(4);
+  await expect(preview.locator('.mermaid.mermaid-rendered > svg')).toHaveCount(1);
+  expect(await remoteReferences(page)).toEqual([]);
+  expect(requests).toEqual([]);
+
+  await placeholders.nth(0).getByRole('button', { name: 'Load images' }).click();
+  await expect(placeholders).toHaveCount(0);
+  await expect(preview.locator('.preview-figure img[alt="badge"]')).toBeVisible();
+  await expect(preview.locator('.preview-figure img[alt="raw html"]')).toBeVisible();
+  await expect(preview.locator('.mermaid.mermaid-rendered > svg')).toHaveCount(2);
+  await expect(preview.locator(`.mermaid svg image[href="${origin}/mermaid.png"]`)).toHaveCount(1);
+  expect(requests).toContain('/markdown.png');
+  expect(requests).toContain('/mermaid.png');
+  expect(page.context().pages()).toHaveLength(1);
+});
+
+test('keeps blocking images that were not on screen when the reader loaded images', async ({
+  page,
+}) => {
+  const requests = await routeRemoteImages(page);
+  const allowedUrl = `${IMAGE_ORIGIN}/allowed.png`;
+  const newUrl = `${IMAGE_ORIGIN}/new.png`;
+  const preview = page.locator('#preview');
+  const placeholders = preview.locator('.blocked-image');
+
+  await turnOnImageBlocking(page);
+  await page.locator('#editor').fill(`# First\n\n![allowed](${allowedUrl})\n`);
+  await expect(placeholders).toHaveCount(1);
+  await placeholders.getByRole('button', { name: 'Load images' }).click();
+  await expect(preview.locator('.preview-figure img[alt="allowed"]')).toBeVisible();
+  expect(requests).toEqual(['/allowed.png']);
+
+  // A different document pasted after loading images gets its own placeholder.
+  await page
+    .locator('#editor')
+    .fill(`# Second\n\n![allowed](${allowedUrl})\n\n![new](${newUrl})\n`);
+  await expect(placeholders).toHaveCount(1);
+  await expect(placeholders).toContainText('new');
+  await expect(preview.locator('.preview-figure img[alt="allowed"]')).toBeVisible();
+  expect(await remoteReferences(page)).toEqual([allowedUrl]);
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await expect(page.locator('#exportEmbedImages')).toBeChecked();
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#exportDownloadBtn').click();
+  const download = await downloadPromise;
+  await expect(page.locator('#mdToast')).toHaveText('Exported HTML');
+  expect(requests).not.toContain('/new.png');
+
+  await page.setContent(await readFile(await download.path(), 'utf8'));
+  await expect(page.locator('img[alt="allowed"]')).toHaveAttribute(
+    'src',
+    /^data:image\/png;base64,/
+  );
+  await expect(page.locator('.blocked-image')).toContainText('new');
+  await expect(page.locator('.blocked-image-load')).toHaveCount(0);
+  expect(requests).not.toContain('/new.png');
+});
