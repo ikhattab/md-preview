@@ -9,7 +9,7 @@ import './styles.css';
 import { dom } from './lib/dom.js';
 import { STORAGE_KEYS } from './lib/constants.js';
 import { getStorageItem } from './lib/storage.js';
-import { configureMarked, schedulePreviewUpdate } from './lib/preview.js';
+import { bindPreviewLinkListeners, configureMarked, schedulePreviewUpdate } from './lib/preview.js';
 import { updateLineGutter, syncGutterScroll } from './lib/gutter.js';
 import { initTooltips } from './lib/tooltip.js';
 import {
@@ -87,6 +87,7 @@ function setupEventListeners() {
   });
 
   bindImportExportListeners();
+  bindPreviewLinkListeners();
 
   themeToggle.addEventListener('click', toggleTheme);
 

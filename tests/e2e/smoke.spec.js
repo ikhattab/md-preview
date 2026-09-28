@@ -89,6 +89,39 @@ for (const viewport of [
   });
 }
 
+test('gives headings GitHub-style ids and scrolls the preview to anchor links', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 480 });
+  const preview = page.locator('#preview');
+
+  await expect(preview.locator('h1')).toHaveId('user-content-smoke-test');
+  await expect(preview.locator('h2', { hasText: 'Links' })).toHaveId('user-content-links');
+  await expect(preview.locator('h3', { hasText: 'Repeat' })).toHaveCount(2);
+  await expect(preview.locator('h3').nth(0)).toHaveId('user-content-repeat');
+  await expect(preview.locator('h3').nth(1)).toHaveId('user-content-repeat-1');
+
+  const link = preview.getByRole('link', { name: 'the links section' });
+  await expect(link).toHaveAttribute('href', '#user-content-links');
+  await expect(preview.getByRole('link', { name: 'the second repeat' })).toHaveAttribute(
+    'href',
+    '#user-content-repeat-1'
+  );
+
+  expect(await preview.evaluate((el) => el.scrollTop)).toBe(0);
+  await link.click();
+
+  await expect(preview.locator('#user-content-links')).toBeInViewport();
+  const scrollState = await page.evaluate(() => ({
+    previewScrollTop: document.getElementById('preview').scrollTop,
+    windowScrollY: window.scrollY,
+    hash: location.hash,
+  }));
+  expect(scrollState.previewScrollTop).toBeGreaterThan(0);
+  expect(scrollState.windowScrollY).toBe(0);
+  expect(scrollState.hash).toBe('');
+});
+
 test('exports standalone HTML with rendered content', async ({ page }) => {
   await page.locator('#exportMenuBtn').click();
   await page.locator('#exportHtmlBtn').click();
@@ -106,6 +139,9 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   await expect(page.locator('pre .hljs-keyword')).toHaveText('const');
   await expect(page.locator('.mermaid > svg')).toBeVisible();
   await expect(page.locator('.code-copy-btn, .mermaid-toolbar, script, [onclick]')).toHaveCount(0);
+
+  await expect(page.locator('a[href="#user-content-links"]')).toHaveCount(1);
+  await expect(page.locator('#user-content-links')).toHaveText('Links');
 });
 
 test('reports remote images that could not be embedded in HTML export', async ({ page }) => {
