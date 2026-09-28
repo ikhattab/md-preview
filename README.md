@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 - Live preview as you type, with GitHub Flavored Markdown and line breaks preserved
 - Line-number gutter and optional scroll sync between editor and preview
 - Built-in markdown linting with a clickable panel that jumps to the offending line
-- Auto-save of your document and preferences (theme, pane width, collapsed editor, scroll sync, linting)
+- Auto-save of your document and preferences (theme, pane width, collapsed editor, scroll sync, linting, remote image blocking)
 - A rich starter document that shows off what the editor can render
 
 ### Rendering
@@ -45,6 +45,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 - Math with [KaTeX](https://katex.org/) and diagrams with [Mermaid](https://mermaid.js.org/)
 - YAML frontmatter at the top of a file shown as a small metadata table, like GitHub
 - Fullscreen viewer for images and diagrams
+- Optional blocking of remote images, with alt-text placeholders and a **Load images** button
 - Mermaid diagram toolbar to view full screen, copy as PNG, or download as PNG
 - All rendered HTML sanitized with [DOMPurify](https://github.com/cure53/DOMPurify)
 
@@ -99,7 +100,7 @@ Linting is off by default; turn it on from the header. The rules follow [markdow
 
 - Your markdown and settings stay on your device. Nothing is sent to a server.
 - The production site ships a strict Content Security Policy (see [`_headers`](_headers)): scripts, fonts, and network connections are limited to the same origin, and the app can't be embedded in frames.
-- Images referenced in your markdown by URL are still fetched from those URLs, since that's how they're displayed.
+- Images referenced in your markdown by URL are fetched from those URLs by default, which reveals your IP address to their hosts. Turn on **Block remote images** in the header to stop this: remote images (including ones in raw HTML, inline styles, and Mermaid diagrams) show as placeholders with their alt text, and **Load images** loads them for the current document. Images from the same site and `data:` URLs always load.
 - If `localStorage` is unavailable (for example, in some private browsing modes), the app still works but won't remember your content or settings.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
@@ -171,6 +172,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
 | `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
 | `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
+| `lib/remote-images.js`          | Remote image blocking and placeholders                   |
 | `lib/icons.js`                  | Lucide icon helpers                                      |
 | `lib/tooltip.js`                | Viewport-aware tooltips                                  |
 | `lib/fonts.js`                  | Self-hosted font imports                                 |
