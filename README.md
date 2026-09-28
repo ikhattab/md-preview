@@ -118,7 +118,7 @@ For a production-like preview:
 
 ```bash
 npm run build
-npm run preview  # serves ./dist at http://localhost:3000
+npm run preview  # serves ./dist at http://localhost:3000 with the headers from _headers
 ```
 
 ## Scripts
@@ -133,6 +133,7 @@ npm run preview  # serves ./dist at http://localhost:3000
 | `npm run format`       | Format all files with Prettier                       |
 | `npm run format:check` | Check formatting with Prettier                       |
 | `npm run check`        | Lint and format check (CI runs this, then the build) |
+| `npm run test:e2e`     | Playwright smoke tests against the production build  |
 
 ## Deployment
 
@@ -150,31 +151,32 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 <details>
 <summary>Project structure</summary>
 
-| Path                    | Purpose                                                  |
-| ----------------------- | -------------------------------------------------------- |
-| `index.html`            | Layout and entry point                                   |
-| `app.js`                | Initialization and event wiring                          |
-| `styles.css`            | Theming, layout, and responsive styles                   |
-| `lib/constants.js`      | Shared constants and the starter document                |
-| `lib/dom.js`            | DOM element references                                   |
-| `lib/storage.js`        | `localStorage` helpers                                   |
-| `lib/utils.js`          | Debounce, throttle, and string helpers                   |
-| `lib/preview.js`        | Markdown parsing, sanitization, Mermaid, preview updates |
-| `lib/gutter.js`         | Line-number gutter                                       |
-| `lib/lint.js`           | Lint rules and panel UI                                  |
-| `lib/theme.js`          | Theme loading and toggling                               |
-| `lib/layout.js`         | Resize, collapse, mobile view, scroll sync               |
-| `lib/content.js`        | Auto-save and content loading                            |
-| `lib/import-export.js`  | Import and Markdown/HTML/PDF export                      |
-| `lib/lazy-vendors.js`   | Lazy loading for highlight.js, KaTeX, and Mermaid        |
-| `lib/media-viewer.js`   | Fullscreen image and diagram viewer                      |
-| `lib/icons.js`          | Lucide icon helpers                                      |
-| `lib/tooltip.js`        | Viewport-aware tooltips                                  |
-| `lib/fonts.js`          | Self-hosted font imports                                 |
-| `vite.config.js`        | Build configuration                                      |
-| `scripts/og-image.html` | Source page for the social preview image                 |
-| `_headers`              | Cache and security headers for static hosting            |
-| `site.webmanifest`      | Web app manifest                                         |
+| Path                            | Purpose                                                  |
+| ------------------------------- | -------------------------------------------------------- |
+| `index.html`                    | Layout and entry point                                   |
+| `app.js`                        | Initialization and event wiring                          |
+| `styles.css`                    | Theming, layout, and responsive styles                   |
+| `lib/constants.js`              | Shared constants and the starter document                |
+| `lib/dom.js`                    | DOM element references                                   |
+| `lib/storage.js`                | `localStorage` helpers                                   |
+| `lib/utils.js`                  | Debounce, throttle, and string helpers                   |
+| `lib/preview.js`                | Markdown parsing, sanitization, Mermaid, preview updates |
+| `lib/gutter.js`                 | Line-number gutter                                       |
+| `lib/lint.js`                   | Lint rules and panel UI                                  |
+| `lib/theme.js`                  | Theme loading and toggling                               |
+| `lib/layout.js`                 | Resize, collapse, mobile view, scroll sync               |
+| `lib/content.js`                | Auto-save and content loading                            |
+| `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
+| `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
+| `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
+| `lib/icons.js`                  | Lucide icon helpers                                      |
+| `lib/tooltip.js`                | Viewport-aware tooltips                                  |
+| `lib/fonts.js`                  | Self-hosted font imports                                 |
+| `vite.config.js`                | Build configuration                                      |
+| `scripts/cloudflare-headers.js` | Applies `_headers` in `vite preview`                     |
+| `scripts/og-image.html`         | Source page for the social preview image                 |
+| `_headers`                      | Cache and security headers for static hosting            |
+| `site.webmanifest`              | Web app manifest                                         |
 
 </details>
 

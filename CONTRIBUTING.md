@@ -23,6 +23,8 @@ npm run test:e2e   # Playwright smoke tests against the production build
 
 `npm run lint:fix` and `npm run format` fix most issues automatically. Before the first e2e run, install the browser with `npx playwright install chromium`.
 
+The e2e tests serve `dist/` with the headers from [`_headers`](_headers), including the production Content Security Policy, and fail on any console error, so CSP violations fail the run.
+
 ## Guidelines
 
 - **Privacy first.** Content never leaves the user's device. Don't add analytics, CDNs, remote fonts, or any network requests.
