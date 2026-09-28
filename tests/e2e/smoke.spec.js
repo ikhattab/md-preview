@@ -582,6 +582,76 @@ test('leaves text dragged inside the editor alone', async ({ page }) => {
   await expect(page.locator('#dropOverlay')).toBeHidden();
 });
 
+// The shortcut modifier the app chose for this browser, read from its own tooltip so the tests
+// don't depend on how the emulated browser reports its platform.
+async function getShortcutModifier(page) {
+  const tooltip = await page.locator('#importBtn').getAttribute('data-tooltip');
+  return tooltip.includes('Ctrl+') ? 'Control' : 'Meta';
+}
+
+test('imports and downloads with keyboard shortcuts', async ({ page }) => {
+  const mod = await getShortcutModifier(page);
+  await page.locator('#editor').focus();
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.keyboard.press(`${mod}+o`);
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'shortcut.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# From a shortcut\n'),
+  });
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(page.locator('#editor')).toHaveValue('# From a shortcut\n');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.keyboard.press(`${mod}+s`);
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('shortcut.md');
+  expect(await readFile(await download.path(), 'utf8')).toBe('# From a shortcut\n');
+});
+
+test('collapses the editor with a shortcut, except while a dialog is open', async ({ page }) => {
+  const mod = await getShortcutModifier(page);
+  const editorPane = page.locator('#editorPane');
+  const collapseBtn = page.locator('#collapseEditor');
+  await expect(collapseBtn).toHaveAttribute('data-tooltip', /^Collapse editor \((⌘|Ctrl\+)\\\)$/);
+
+  await page.keyboard.press(`${mod}+\\`);
+  await expect(editorPane).toHaveClass(/collapsed/);
+  await expect(collapseBtn).toHaveAttribute('data-tooltip', /^Expand editor /);
+  await page.keyboard.press(`${mod}+\\`);
+  await expect(editorPane).not.toHaveClass(/collapsed/);
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.keyboard.press(`${mod}+o`);
+  await (
+    await fileChooserPromise
+  ).setFiles({ name: 'a.md', mimeType: 'text/markdown', buffer: Buffer.from('# A\n') });
+  await expect(page.locator('#importConfirmDialog')).toBeVisible();
+  await page.keyboard.press(`${mod}+\\`);
+  await expect(editorPane).not.toHaveClass(/collapsed/);
+});
+
+test('shows shortcuts in the Import tooltip and the Export menu', async ({ page }) => {
+  await expect(page.locator('#importBtn')).toHaveAttribute(
+    'data-tooltip',
+    /^Import a file \((⌘|Ctrl\+)O\)$/
+  );
+
+  await page.locator('#exportMenuBtn').click();
+  await expect(page.locator('#exportMdBtn .shortcut-hint')).toHaveText(/^(⌘|Ctrl\+)S$/);
+  await expect(page.locator('#exportMdBtn')).toHaveAccessibleName('Download .md');
+});
+
+test('hides shortcut hints on small screens', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.locator('#headerMenuBtn').click();
+  await page.locator('#exportMenuBtn').click();
+  await expect(page.locator('#exportMdBtn')).toBeVisible();
+  await expect(page.locator('#exportMdBtn .shortcut-hint')).toBeHidden();
+});
+
 const HEADER_CONTROLS = [
   '#lintToggle',
   '#remoteImagesToggle',

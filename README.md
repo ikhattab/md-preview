@@ -59,6 +59,16 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
   - **HTML**: a self-contained file with embedded styles and optional base64-inlined images
   - **PDF** through the browser's print dialog (choose "Save as PDF")
 
+### Keyboard shortcuts
+
+Use <kbd>Cmd</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. Shortcuts are paused while a dialog is open.
+
+| Shortcut               | Action                                                  |
+| ---------------------- | ------------------------------------------------------- |
+| <kbd>Cmd/Ctrl+O</kbd>  | Import a file                                           |
+| <kbd>Cmd/Ctrl+S</kbd>  | Download the document as `.md`                          |
+| <kbd>Cmd/Ctrl+\\</kbd> | Collapse or expand the editor (not available on mobile) |
+
 ### Layout
 
 - Resizable split panes (drag the handle, or focus it and use the arrow keys)
