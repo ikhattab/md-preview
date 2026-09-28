@@ -1,3 +1,11 @@
+---
+title: 'Smoke Test'
+tags: [alpha, beta]
+authors:
+  - Ada
+  - Grace
+---
+
 # Smoke Test
 
 Some **bold**, _italic_, `inline code` and a [link](https://example.com).
@@ -53,6 +61,8 @@ graph TD
 
 > [!CAUTION]
 > Advises about risks or negative outcomes.
+
+---
 
 ## Links
 

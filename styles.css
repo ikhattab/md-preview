@@ -1161,6 +1161,52 @@ textarea:focus:not(:focus-visible) {
   border-bottom: none;
 }
 
+/* YAML frontmatter */
+.prose .frontmatter .table-wrap,
+.prose pre.frontmatter {
+  margin: 0 0 2em;
+}
+
+.prose .frontmatter table {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
+.prose .frontmatter tbody tr:nth-child(even) {
+  background: transparent;
+}
+
+.prose .frontmatter th,
+.prose .frontmatter td {
+  padding: 0.4rem 0.85rem;
+}
+
+.prose .frontmatter th {
+  width: 1%;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+.prose .frontmatter tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.prose .frontmatter td {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.prose .frontmatter-raw {
+  font-family: var(--font-mono);
+}
+
+.prose pre.frontmatter {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
 /* Code block copy button */
 .prose pre.code-block-with-copy {
   position: relative;
