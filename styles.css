@@ -1602,3 +1602,95 @@ textarea:focus:not(:focus-visible) {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Print (Cmd/Ctrl+P) — only the rendered preview
+   ───────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  html[data-theme='light'] body,
+  html[data-theme='light'] .preview {
+    background: #ffffff;
+  }
+
+  .skip-link,
+  .header,
+  .editor-pane,
+  .resize-handle,
+  .pane-header,
+  .md-toast,
+  .gutter-tooltip,
+  dialog,
+  .mermaid-toolbar,
+  .preview-figure-toolbar,
+  .code-copy-btn {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .app,
+  .editor-container,
+  .preview-pane,
+  .preview {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+  }
+
+  .preview,
+  .editor-pane.collapsed ~ .preview-pane .preview {
+    padding: 0 !important;
+  }
+
+  .prose,
+  .editor-pane.collapsed ~ .preview-pane .prose {
+    max-width: none !important;
+    padding: 0;
+  }
+
+  .mermaid.mermaid-has-toolbar {
+    padding-top: 1rem;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .table-wrap {
+    overflow: visible !important;
+  }
+
+  pre,
+  .mermaid,
+  img,
+  tr,
+  blockquote {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}

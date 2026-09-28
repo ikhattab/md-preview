@@ -55,6 +55,31 @@ test('sanitizes untrusted HTML', async ({ page }) => {
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
 });
 
+for (const viewport of [
+  { name: 'desktop', width: 1280, height: 800 },
+  { name: 'mobile', width: 390, height: 844 },
+]) {
+  test(`prints only the preview (${viewport.name})`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ media: 'print' });
+
+    const preview = page.locator('#preview');
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveCSS('overflow-y', 'visible');
+    await expect(page.locator('#previewPane')).toHaveCSS('opacity', '1');
+    await expect(preview.locator('h1')).toBeVisible();
+    expect(await preview.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(
+      1
+    );
+
+    for (const selector of ['.header', '#editorPane', '.pane-header', '#resizeHandle']) {
+      await expect(page.locator(selector).first()).toBeHidden();
+    }
+    await expect(preview.locator('.mermaid-toolbar')).toBeHidden();
+    await expect(preview.locator('.code-copy-btn')).toBeHidden();
+  });
+}
+
 test('exports standalone HTML with rendered content', async ({ page }) => {
   await page.locator('#exportMenuBtn').click();
   await page.locator('#exportHtmlBtn').click();
