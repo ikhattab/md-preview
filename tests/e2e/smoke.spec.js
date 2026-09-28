@@ -3,7 +3,26 @@ import { test, expect } from '@playwright/test';
 
 const fixture = await readFile(new URL('./fixtures/kitchen-sink.md', import.meta.url), 'utf8');
 
+const ALERT_TITLES = ['Note', 'Tip', 'Important', 'Warning', 'Caution'];
+
 let errors = [];
+
+function readAlertColors(root) {
+  return root.locator('.markdown-alert').evaluateAll((alerts) =>
+    alerts.map((alert) => ({
+      border: getComputedStyle(alert).borderLeftColor,
+      title: getComputedStyle(alert.querySelector('.markdown-alert-title')).color,
+    }))
+  );
+}
+
+function expectDistinctAlertColors(colors) {
+  expect(colors).toHaveLength(ALERT_TITLES.length);
+  for (const { border, title } of colors) {
+    expect(title).toBe(border);
+  }
+  expect(new Set(colors.map(({ border }) => border)).size).toBe(ALERT_TITLES.length);
+}
 
 test.beforeEach(async ({ page }) => {
   errors = [];
@@ -49,6 +68,31 @@ test('renders every supported markdown feature', async ({ page }) => {
   await expect(preview.locator('.mermaid > svg')).toContainText('Start');
 
   await expect(preview.locator('.preview-figure img[alt="pixel"]')).toBeVisible();
+});
+
+test('renders GitHub alerts with a title and distinct color in both themes', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const alerts = preview.locator('.markdown-alert');
+
+  await expect(alerts).toHaveCount(ALERT_TITLES.length);
+  for (const [i, title] of ALERT_TITLES.entries()) {
+    const alert = alerts.nth(i);
+    await expect(alert).toHaveClass(`markdown-alert markdown-alert-${title.toLowerCase()}`);
+    await expect(alert.locator('.markdown-alert-title')).toHaveText(title);
+    await expect(alert.locator('.markdown-alert-title svg.markdown-alert-icon')).toBeVisible();
+  }
+  await expect(preview).not.toContainText('[!');
+  await expect(alerts.nth(2).locator('p:not(.markdown-alert-title)')).toHaveCount(2);
+
+  const lightColors = await readAlertColors(preview);
+  expectDistinctAlertColors(lightColors);
+
+  await page.locator('#themeToggle').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  const darkColors = await readAlertColors(preview);
+  expectDistinctAlertColors(darkColors);
+  expect(darkColors).not.toEqual(lightColors);
 });
 
 test('sanitizes untrusted HTML', async ({ page }) => {
@@ -155,6 +199,8 @@ test('opens external links in a new tab and keeps anchor links in place', async 
 });
 
 test('exports standalone HTML with rendered content', async ({ page }) => {
+  const previewAlertColors = await readAlertColors(page.locator('#preview'));
+
   await page.locator('#exportMenuBtn').click();
   await page.locator('#exportHtmlBtn').click();
   await page.locator('#exportFilename').fill('smoke');
@@ -174,6 +220,10 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
 
   await expect(page.locator('a[href="#user-content-links"]')).toHaveCount(1);
   await expect(page.locator('#user-content-links')).toHaveText('Links');
+
+  await expect(page.locator('.markdown-alert-title')).toHaveText(ALERT_TITLES);
+  await expect(page.locator('.markdown-alert-title svg')).toHaveCount(ALERT_TITLES.length);
+  expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
 test('serves the production Content Security Policy and fails on violations', async ({ page }) => {
