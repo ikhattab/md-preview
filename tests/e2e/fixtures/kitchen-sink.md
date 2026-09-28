@@ -18,6 +18,8 @@ Jump to [the links section](#links) or [the second repeat](#repeat-1).
 - [x] done
 - [ ] todo
 
+Write to [the team](mailto:team@example.com), follow <a href="https://example.org/raw">a raw HTML link</a>, or go [back to the top](#smoke-test).
+
 ```js
 const answer = 42;
 ```

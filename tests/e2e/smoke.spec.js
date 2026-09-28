@@ -122,6 +122,39 @@ test('gives headings GitHub-style ids and scrolls the preview to anchor links', 
   expect(scrollState.hash).toBe('');
 });
 
+test('opens external links in a new tab and keeps anchor links in place', async ({ page }) => {
+  const preview = page.locator('#preview');
+
+  for (const href of [
+    'https://example.com',
+    'mailto:team@example.com',
+    'https://example.org/raw',
+  ]) {
+    const link = preview.locator(`a[href="${href}"]`);
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  }
+
+  const anchor = preview.getByRole('link', { name: 'back to the top' });
+  await expect(anchor).toHaveAttribute('href', '#user-content-smoke-test');
+  await expect(anchor).not.toHaveAttribute('target');
+  await expect(preview.locator('a[href^="javascript:"]')).toHaveCount(0);
+
+  await page
+    .context()
+    .route('https://example.com/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<p>external</p>' })
+    );
+  const appUrl = page.url();
+  const popupPromise = page.waitForEvent('popup');
+  await preview.locator('a[href="https://example.com"]').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState();
+
+  expect(popup.url()).toBe('https://example.com/');
+  expect(page.url()).toBe(appUrl);
+});
+
 test('exports standalone HTML with rendered content', async ({ page }) => {
   await page.locator('#exportMenuBtn').click();
   await page.locator('#exportHtmlBtn').click();
