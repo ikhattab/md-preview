@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
 
 const fixture = await readFile(new URL('./fixtures/kitchen-sink.md', import.meta.url), 'utf8');
@@ -105,4 +106,54 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   await expect(page.locator('pre .hljs-keyword')).toHaveText('const');
   await expect(page.locator('.mermaid > svg')).toBeVisible();
   await expect(page.locator('.code-copy-btn, .mermaid-toolbar, script, [onclick]')).toHaveCount(0);
+});
+
+test('reports remote images that could not be embedded in HTML export', async ({ page }) => {
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64'
+  );
+  // A real second origin, because Playwright relaxes CORS for responses fulfilled via page.route.
+  const imageServer = createServer((req, res) => {
+    const cors = req.url === '/cors.png' ? { 'Access-Control-Allow-Origin': '*' } : {};
+    res.writeHead(200, { 'Content-Type': 'image/png', ...cors });
+    res.end(png);
+  });
+  await new Promise((resolve) => imageServer.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${imageServer.address().port}`;
+  const corsUrl = `${origin}/cors.png`;
+  const noCorsUrl = `${origin}/no-cors.png`;
+
+  try {
+    await page
+      .locator('#editor')
+      .fill(`# Remote images\n\n![cors](${corsUrl})\n\n![no-cors](${noCorsUrl})\n`);
+    await expect(page.locator('#preview img[alt="no-cors"]')).toBeVisible();
+
+    await page.locator('#exportMenuBtn').click();
+    await page.locator('#exportHtmlBtn').click();
+    await expect(page.locator('#exportEmbedImages')).toBeChecked();
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#exportDownloadBtn').click();
+    const download = await downloadPromise;
+
+    await expect(page.locator('#mdToast')).toHaveText(
+      "Exported HTML — 1 image couldn't be embedded (kept as links)"
+    );
+
+    // The browser logs the blocked cross-origin fetch as a console error.
+    errors = errors.filter(
+      (message) => !message.includes(noCorsUrl) && !message.includes('ERR_FAILED')
+    );
+
+    await page.setContent(await readFile(await download.path(), 'utf8'));
+    await expect(page.locator('img[alt="cors"]')).toHaveAttribute(
+      'src',
+      /^data:image\/png;base64,/
+    );
+    await expect(page.locator('img[alt="no-cors"]')).toHaveAttribute('src', noCorsUrl);
+  } finally {
+    imageServer.close();
+  }
 });
