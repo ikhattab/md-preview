@@ -46,6 +46,7 @@ import {
 import { bindImportExportListeners } from './lib/import-export.js';
 import { renderStaticIcons } from './lib/icons.js';
 import { initMediaViewer } from './lib/media-viewer.js';
+import { loadRemoteImagePreference, toggleRemoteImageBlocking } from './lib/remote-images.js';
 
 const {
   editor,
@@ -55,6 +56,7 @@ const {
   collapseBtn,
   scrollSyncToggle,
   lintToggle,
+  remoteImagesToggle,
   viewTabs,
 } = dom;
 
@@ -123,6 +125,13 @@ function setupEventListeners() {
     lintToggle.addEventListener('click', toggleLint);
   }
 
+  if (remoteImagesToggle) {
+    remoteImagesToggle.addEventListener('click', () => {
+      toggleRemoteImageBlocking();
+      schedulePreviewUpdate({ force: true });
+    });
+  }
+
   viewTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       setMobileView(tab.dataset.view);
@@ -161,6 +170,7 @@ function init() {
   loadEditorWidth();
   loadScrollSyncPreference();
   loadLintPreference();
+  loadRemoteImagePreference();
   loadContent();
   refreshGutter();
   resetPaneScrollPositions();
