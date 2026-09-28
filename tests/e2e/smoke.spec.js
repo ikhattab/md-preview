@@ -27,6 +27,14 @@ test('renders every supported markdown feature', async ({ page }) => {
   const preview = page.locator('#preview');
 
   await expect(preview.locator('h1')).toHaveText('Smoke Test');
+
+  const wrapped = preview.locator('p', { hasText: 'This paragraph is hard-wrapped' });
+  await expect(wrapped).toHaveText(
+    'This paragraph is hard-wrapped across several lines and renders as one line.'
+  );
+  await expect(wrapped.locator('br')).toHaveCount(0);
+  await expect(preview.locator('p', { hasText: 'First line' }).locator('br')).toHaveCount(1);
+
   await expect(preview.locator('.table-wrap table td').first()).toHaveText('alpha');
   await expect(preview.locator('input[type="checkbox"]')).toHaveCount(2);
 
