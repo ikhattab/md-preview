@@ -389,6 +389,17 @@
       </form>
     </dialog>
 
+    <div class="drop-overlay" id="dropOverlay" data-state="ready" aria-hidden="true">
+      <div class="drop-overlay-frame">
+        <span class="drop-overlay-icon">
+          <i data-lucide="file-down" class="drop-overlay-icon-ready" width="28" height="28"></i>
+          <i data-lucide="file-x" class="drop-overlay-icon-unsupported" width="28" height="28"></i>
+        </span>
+        <p class="drop-overlay-title" id="dropOverlayTitle">Drop to open</p>
+        <p class="drop-overlay-hint" id="dropOverlayHint">Markdown or plain text, up to 2 MB</p>
+      </div>
+    </div>
+
     <dialog class="media-viewer" id="mediaViewerDialog" aria-label="Full size preview">
       <button
         type="button"

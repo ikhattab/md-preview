@@ -1856,6 +1856,125 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Drop Overlay (drag a file anywhere to import)
+   ───────────────────────────────────────────────────────────────── */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    visibility 0s linear 0.15s;
+}
+
+.drop-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  /* Catch every drag event so the page underneath never flickers the overlay. */
+  pointer-events: auto;
+  transition: opacity 0.15s ease;
+}
+
+.drop-overlay-frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 2px dashed var(--accent);
+  border-radius: 1rem;
+  background: var(--accent-glow);
+  pointer-events: none;
+  transform: scale(0.98);
+  transition:
+    transform 0.2s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.drop-overlay.visible .drop-overlay-frame {
+  transform: scale(1);
+}
+
+.drop-overlay-icon {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 0.6rem;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.drop-overlay.visible .drop-overlay-icon {
+  animation: drop-overlay-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes drop-overlay-bob {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.drop-overlay-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drop-overlay-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.drop-overlay-icon-unsupported,
+.drop-overlay[data-state='unsupported'] .drop-overlay-icon-ready {
+  display: none;
+}
+
+.drop-overlay[data-state='unsupported'] .drop-overlay-icon-unsupported {
+  display: block;
+}
+
+.drop-overlay[data-state='unsupported'] .drop-overlay-frame {
+  border-color: var(--border-hover);
+  background: transparent;
+}
+
+.drop-overlay[data-state='unsupported'] .drop-overlay-icon {
+  color: var(--text-muted);
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-overlay,
+  .drop-overlay-frame {
+    transition: none;
+  }
+
+  .drop-overlay-frame {
+    transform: none;
+  }
+
+  .drop-overlay.visible .drop-overlay-icon {
+    animation: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Export Dialog
    ───────────────────────────────────────────────────────────────── */
 .export-dialog {
