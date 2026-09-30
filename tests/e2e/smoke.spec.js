@@ -642,6 +642,8 @@ test('opens a file the OS launched the installed app with', async ({ page }) => 
   await page.locator('#importConfirmReplaceBtn').click();
   await expect(page.locator('#editor')).toHaveValue('# Launched notes\n');
   await expect(page.locator('#preview h1')).toHaveText('Launched notes');
+  // Like any import, it opens for reading.
+  await expect(page.locator('#editorPane')).toHaveClass(/collapsed/);
 
   // Opening another file while the app is running reuses this window.
   await page.evaluate(() => window.launchFile({ name: 'second.md', content: '# Second\n' }));
