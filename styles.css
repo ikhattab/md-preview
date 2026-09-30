@@ -1282,6 +1282,28 @@ textarea:focus:not(:focus-visible) {
   line-height: 0;
 }
 
+.prose a[data-footnote-ref] {
+  text-decoration: none;
+}
+
+.prose .footnotes {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.875em;
+  color: var(--text-secondary);
+}
+
+.prose .footnotes p,
+.editor-pane.collapsed ~ .preview-pane .prose .footnotes p {
+  margin-bottom: 0.5em;
+}
+
+.prose a[data-footnote-backref] {
+  text-decoration: none;
+  font-variant-emoji: text; /* Keep ↩ from turning into an emoji on iOS */
+}
+
 .prose img {
   display: block;
   max-width: 100%;

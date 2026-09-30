@@ -206,6 +206,76 @@ test('gives headings GitHub-style ids and scrolls the preview to anchor links', 
   expect(scrollState.hash).toBe('');
 });
 
+const FOOTNOTES_DOC = `# Notes
+
+A claim[^1] and a named note[^source].
+
+${Array.from({ length: 30 }, (_, i) => `Filler paragraph ${i}.`).join('\n\n')}
+
+The same claim again[^1].
+
+[^1]: The first note.
+[^source]: A note with **bold** text.
+`;
+
+// In-page links whose target isn't in the document.
+function findBrokenInPageLinks(root = document) {
+  return [...root.querySelectorAll('a[href^="#"]')]
+    .map((a) => a.getAttribute('href'))
+    .filter((href) => !document.getElementById(decodeURIComponent(href.slice(1))));
+}
+
+test('links footnotes to their notes and back, including in exports', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 480 });
+  const preview = page.locator('#preview');
+  await page.locator('#editor').fill(FOOTNOTES_DOC);
+
+  const refs = preview.locator('a[data-footnote-ref]');
+  const notes = preview.locator('.footnotes li');
+  await expect(refs).toHaveText(['1', '2', '1']);
+  await expect(refs.first()).toHaveAttribute('href', '#user-content-footnote-1');
+  await expect(notes).toHaveText([/The first note\./, /A note with bold text\./]);
+  await expect(notes.first()).toHaveId('user-content-footnote-1');
+  // Screen readers announce each reference as a footnote.
+  await expect(refs.first()).toHaveAttribute('aria-describedby', 'user-content-footnote-label');
+  await expect(preview.locator('#user-content-footnote-label')).toHaveText('Footnotes');
+  expect(await preview.evaluate(findBrokenInPageLinks)).toEqual([]);
+
+  await expect(notes.first()).not.toBeInViewport();
+  await refs.first().click();
+  await expect(notes.first()).toBeInViewport();
+  await notes.first().getByRole('link', { name: 'Back to reference 1' }).first().click();
+  await expect(refs.first()).toBeInViewport();
+  expect(await page.evaluate(() => location.hash)).toBe('');
+
+  await page.addInitScript(() => {
+    window.print = () => {
+      const hrefs = [...document.querySelectorAll('a[href^="#"]')].map((a) =>
+        a.getAttribute('href')
+      );
+      window.top.__printedFootnotes = {
+        notes: document.querySelectorAll('.footnotes li').length,
+        broken: hrefs.filter((href) => !document.getElementById(href.slice(1))),
+      };
+    };
+  });
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportPdfBtn').click();
+  await page.locator('#exportDownloadBtn').click();
+  await expect
+    .poll(() => page.evaluate(() => window.__printedFootnotes))
+    .toEqual({ notes: 2, broken: [] });
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#exportDownloadBtn').click();
+  await page.setContent(await readFile(await (await downloadPromise).path(), 'utf8'));
+  await expect(page.locator('.footnotes li')).toHaveCount(2);
+  await expect(page.locator('a[data-footnote-ref]')).toHaveCount(3);
+  expect(await page.evaluate(findBrokenInPageLinks)).toEqual([]);
+});
+
 test('opens external links in a new tab and keeps anchor links in place', async ({ page }) => {
   const preview = page.locator('#preview');
 
