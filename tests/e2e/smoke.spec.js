@@ -136,6 +136,84 @@ test('lints frontmatter documents without flagging the YAML', async ({ page }) =
   await expect(page.locator('#lintList .lint-item-message')).toHaveText(['No issues found']);
 });
 
+// Each document starts with a top-level heading and ends with a newline, so only
+// the rule under test fires.
+const LINT_CASES = [
+  {
+    rule: 'MD009',
+    markdown: '# Title\n\nTrailing space \nHard break  \nClean\n',
+    expected: ['L3 MD009: Trailing spaces'],
+  },
+  {
+    rule: 'MD010',
+    markdown: '# Title\n\n\tIndented with a tab\n',
+    expected: ['L3 MD010: Hard tabs used instead of spaces'],
+  },
+  {
+    rule: 'MD012',
+    markdown: '# Title\n\nOne\n\n\n\nTwo\n',
+    expected: [
+      'L5 MD012: Multiple consecutive blank lines',
+      'L6 MD012: Multiple consecutive blank lines',
+    ],
+  },
+  {
+    rule: 'MD018',
+    markdown: '# Title\n\n##No space\n\nA #hashtag mid-line\n',
+    expected: ['L3 MD018: No space after hash on heading'],
+  },
+  {
+    rule: 'MD022',
+    markdown: '# Title\nIntro\n\nText\n## Section\n\nMore\n',
+    expected: [
+      'L1 MD022: Heading should have blank line after',
+      'L5 MD022: Heading should have blank line before',
+    ],
+  },
+  {
+    rule: 'MD037',
+    markdown:
+      '# Title\n\nSome * spaced * emphasis\n\nSome ** spaced ** bold\n\nSome _ spaced _ emphasis\n\nFine *emphasis* and **bold**\n',
+    expected: [
+      'L3 MD037: Spaces inside emphasis markers',
+      'L5 MD037: Spaces inside bold markers',
+      'L7 MD037: Spaces inside emphasis markers',
+    ],
+  },
+  {
+    rule: 'MD041',
+    markdown: '\n## Not top-level\n\nText\n',
+    expected: ['L2 MD041: First line should be a top-level heading'],
+  },
+  {
+    rule: 'MD047',
+    markdown: '# Title\n\nNo newline at the end',
+    expected: ['L3 MD047: File should end with newline'],
+  },
+];
+
+function readLintItems(page) {
+  return page.locator('#lintList .lint-item').evaluateAll((items) =>
+    items.map((item) =>
+      [item.querySelector('.lint-item-line'), item.querySelector('.lint-item-message')]
+        .filter(Boolean)
+        .map((el) => el.textContent)
+        .join(' ')
+    )
+  );
+}
+
+for (const { rule, markdown, expected } of LINT_CASES) {
+  test(`lints ${rule} and nothing else`, async ({ page }) => {
+    await page.locator('#lintToggle').click();
+    await page.locator('#editor').fill(markdown);
+    await expect.poll(() => readLintItems(page)).toEqual(expected);
+
+    await page.locator('#editor').fill('# Title\n\nClean paragraph.\n');
+    await expect.poll(() => readLintItems(page)).toEqual(['No issues found']);
+  });
+}
+
 test('sanitizes untrusted HTML', async ({ page }) => {
   const preview = page.locator('#preview');
 
@@ -480,6 +558,66 @@ test('loads every image before printing a long PDF export', async ({ page }) => 
   await expect
     .poll(() => page.evaluate(() => window.__printedImages), { timeout: 15_000 })
     .toEqual([...Array(imageCount).fill(true), false]);
+});
+
+function readMermaidNodeFill(root) {
+  return root
+    .locator('.mermaid svg .node .label-container')
+    .first()
+    .evaluate((el) => getComputedStyle(el).fill);
+}
+
+test('prints a PDF export in the chosen theme and restores the live theme', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const lightFill = await readMermaidNodeFill(preview);
+  await page.locator('#themeToggle').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect.poll(() => readMermaidNodeFill(preview)).not.toBe(lightFill);
+  const darkFill = await readMermaidNodeFill(preview);
+  const appTitle = await page.title();
+
+  await page.addInitScript(() => {
+    window.print = () => {
+      const node = document.querySelector('.mermaid svg .node .label-container');
+      window.top.__printed = {
+        title: document.title,
+        appTitle: window.top.document.title,
+        theme: document.documentElement.dataset.theme,
+        appTheme: window.top.document.documentElement.dataset.theme,
+        mermaidFill: node && getComputedStyle(node).fill,
+        katex: document.querySelectorAll('.katex-display').length,
+        chrome: document.querySelectorAll('button, .code-copy-btn, .mermaid-toolbar, script')
+          .length,
+      };
+      // Closing the print dialog fires afterprint, which ends the print job.
+      window.dispatchEvent(new Event('afterprint'));
+    };
+  });
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportPdfBtn').click();
+  await expect(page.locator('#exportFilename')).toHaveValue('smoke-test');
+  await expect(page.locator('#exportTheme')).toHaveValue('light');
+  await page.locator('#exportFilename').fill('Q3 report.pdf');
+  await page.locator('#exportDownloadBtn').click();
+
+  await expect
+    .poll(() => page.evaluate(() => window.__printed))
+    .toEqual({
+      title: 'Q3 report',
+      appTitle: 'Q3 report',
+      theme: 'light',
+      appTheme: 'light',
+      mermaidFill: lightFill,
+      katex: 1,
+      chrome: 0,
+    });
+
+  await expect(page.locator('#exportDialog')).not.toBeVisible();
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect.poll(() => readMermaidNodeFill(preview)).toBe(darkFill);
+  await expect(page).toHaveTitle(appTitle);
 });
 
 test('embeds remote images in HTML export and reports the ones it could not', async ({ page }) => {
