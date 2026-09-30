@@ -48,6 +48,7 @@ import { bindShortcuts } from './lib/shortcuts.js';
 import { bindHeaderMenuListeners } from './lib/header-menu.js';
 import { renderStaticIcons } from './lib/icons.js';
 import { initMediaViewer } from './lib/media-viewer.js';
+import { initOutline } from './lib/outline.js';
 import { registerServiceWorker } from './lib/offline.js';
 import { loadRemoteImagePreference, toggleRemoteImageBlocking } from './lib/remote-images.js';
 
@@ -182,6 +183,7 @@ function init() {
   normalizeEditorPosition();
   setupEventListeners();
   initMobileView();
+  initOutline();
   runInitialLint();
   registerServiceWorker();
 }

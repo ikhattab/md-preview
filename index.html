@@ -164,6 +164,19 @@
               <span class="header-menu-switch" aria-hidden="true"></span>
             </button>
             <button
+              class="outline-toggle"
+              id="outlineToggle"
+              aria-label="Outline"
+              title="Show outline"
+              data-tooltip="Show outline"
+              aria-pressed="false"
+              aria-controls="outlinePanel"
+            >
+              <i data-lucide="table-of-contents" width="18" height="18" aria-hidden="true"></i>
+              <span class="header-menu-label">Outline</span>
+              <span class="header-menu-switch" aria-hidden="true"></span>
+            </button>
+            <button
               class="remote-images-toggle"
               id="remoteImagesToggle"
               aria-label="Block remote images"
@@ -353,12 +366,29 @@
           <header class="pane-header">
             <h2 class="pane-title" id="previewHeading">Preview</h2>
           </header>
-          <article
-            id="preview"
-            class="preview prose"
-            aria-live="polite"
-            aria-label="Markdown preview"
-          ></article>
+          <div class="preview-body">
+            <article
+              id="preview"
+              class="preview prose"
+              aria-live="polite"
+              aria-label="Markdown preview"
+            ></article>
+            <nav class="outline-panel" id="outlinePanel" aria-labelledby="outlineHeading" hidden>
+              <header class="outline-header">
+                <h2 class="outline-title" id="outlineHeading">Outline</h2>
+                <button
+                  type="button"
+                  class="outline-close"
+                  id="outlineClose"
+                  aria-label="Close outline"
+                  data-tooltip="Close outline"
+                >
+                  <i data-lucide="x" width="16" height="16" aria-hidden="true"></i>
+                </button>
+              </header>
+              <ol class="outline-list" id="outlineList"></ol>
+            </nav>
+          </div>
         </section>
       </main>
     </div>

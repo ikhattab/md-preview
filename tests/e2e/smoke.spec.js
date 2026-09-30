@@ -154,6 +154,10 @@ for (const viewport of [
 ]) {
   test(`prints only the preview (${viewport.name})`, async ({ page }) => {
     await page.setViewportSize(viewport);
+    if (viewport.name === 'desktop') {
+      await page.locator('#outlineToggle').click();
+      await expect(page.locator('#outlinePanel')).toBeVisible();
+    }
     await page.emulateMedia({ media: 'print' });
 
     const preview = page.locator('#preview');
@@ -165,7 +169,13 @@ for (const viewport of [
       1
     );
 
-    for (const selector of ['.header', '#editorPane', '.pane-header', '#resizeHandle']) {
+    for (const selector of [
+      '.header',
+      '#editorPane',
+      '.pane-header',
+      '#resizeHandle',
+      '#outlinePanel',
+    ]) {
       await expect(page.locator(selector).first()).toBeHidden();
     }
     await expect(preview.locator('.mermaid-toolbar')).toBeHidden();
@@ -274,6 +284,92 @@ test('links footnotes to their notes and back, including in exports', async ({ p
   await expect(page.locator('.footnotes li')).toHaveCount(2);
   await expect(page.locator('a[data-footnote-ref]')).toHaveCount(3);
   expect(await page.evaluate(findBrokenInPageLinks)).toEqual([]);
+});
+
+const filler = (n) => Array.from({ length: n }, (_, i) => `Filler paragraph ${i}.`).join('\n\n');
+
+const OUTLINE_DOC = `## Guide
+
+${filler(8)}
+
+### Install
+
+${filler(8)}
+
+#### Options
+
+${filler(8)}
+
+> ## A quoted heading
+
+### Usage
+
+${filler(8)}
+
+## FAQ
+
+A note.[^1]
+
+${filler(20)}
+
+[^1]: Footnotes have a hidden heading of their own.
+`;
+
+test('shows a document outline that follows the preview', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 480 });
+  const editor = page.locator('#editor');
+  const preview = page.locator('#preview');
+  const toggle = page.locator('#outlineToggle');
+  const panel = page.locator('#outlinePanel');
+  const links = panel.locator('.outline-link');
+  await editor.fill(OUTLINE_DOC);
+
+  await expect(panel).toBeHidden();
+  await toggle.click();
+  await expect(panel).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+  // Top-level headings only, indented relative to the highest level used.
+  await expect(links).toHaveText(['Guide', 'Install', 'Options', 'Usage', 'FAQ']);
+  expect(
+    await panel.locator('.outline-item').evaluateAll((items) => items.map((i) => i.dataset.depth))
+  ).toEqual(['0', '1', '2', '1', '0']);
+  await expect(links.nth(3)).toHaveAttribute('href', '#user-content-usage');
+
+  // Jumping to a section scrolls the preview, moves focus there and marks the entry.
+  const usage = preview.locator('#user-content-usage');
+  await expect(usage).not.toBeInViewport();
+  await links.nth(3).click();
+  await expect(usage).toBeInViewport();
+  await expect(usage).toBeFocused();
+  await expect(links.nth(3)).toHaveAttribute('aria-current', 'location');
+  expect(await page.evaluate(() => location.hash)).toBe('');
+
+  // The current section follows scrolling, and the last one wins at the bottom.
+  await preview.evaluate((el) => (el.scrollTop = 0));
+  await expect(links.nth(0)).toHaveAttribute('aria-current', 'location');
+  await preview.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await expect(links.nth(4)).toHaveAttribute('aria-current', 'location');
+  await expect(panel.locator('[aria-current]')).toHaveCount(1);
+
+  // It updates as the document changes, and stays open after a reload.
+  await editor.fill(`${OUTLINE_DOC}\n## Changelog\n`);
+  await expect(links.last()).toHaveText('Changelog');
+  await page.reload();
+  await expect(panel).toBeVisible();
+
+  // Without headings there's nothing to show.
+  await editor.fill('Just a paragraph.\n');
+  await expect(panel).toBeHidden();
+  await expect(toggle).toBeDisabled();
+  await editor.fill('# Back\n');
+  await expect(panel).toBeVisible();
+  await expect(links).toHaveText(['Back']);
+
+  await panel.getByRole('button', { name: 'Close outline' }).click();
+  await expect(panel).toBeHidden();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(toggle).toBeFocused();
 });
 
 test('opens external links in a new tab and keeps anchor links in place', async ({ page }) => {
@@ -848,6 +944,7 @@ test.describe('on macOS', () => {
 
 const HEADER_CONTROLS = [
   '#lintToggle',
+  '#outlineToggle',
   '#remoteImagesToggle',
   '#importBtn',
   '#exportMenuBtn',
@@ -957,6 +1054,48 @@ test.describe('mobile header', () => {
     await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
     await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#editorPane')).toHaveClass(/mobile-active/);
+  });
+
+  test('opens the outline over the preview from the menu', async ({ page }) => {
+    const menuBtn = page.locator('#headerMenuBtn');
+    const panel = page.locator('#outlinePanel');
+    await page.locator('#editor').fill(OUTLINE_DOC);
+
+    async function openOutline() {
+      await menuBtn.click();
+      await page.locator('#outlineToggle').click();
+      await expect(page.locator('#headerMenu')).toBeHidden();
+      await expect(panel).toBeVisible();
+    }
+
+    await openOutline();
+    await expect(page.locator('.view-tab[data-view="preview"]')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    // Picking a section closes the outline to show it.
+    await panel.getByRole('link', { name: 'Usage' }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.locator('#user-content-usage')).toBeInViewport();
+
+    // Focus moves into the outline, to the current section.
+    await openOutline();
+    await expect(panel.getByRole('link', { name: 'Usage' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(menuBtn).toBeFocused();
+
+    // Tapping the preview beside the outline closes it too.
+    await openOutline();
+    await page.locator('#preview').click({ position: { x: 10, y: 200 } });
+    await expect(panel).toBeHidden();
+
+    // On mobile the outline doesn't reopen by itself.
+    await openOutline();
+    await page.reload();
+    await expect(page.locator('#preview h2').first()).toBeVisible();
+    await expect(panel).toBeHidden();
   });
 
   test('imports and exports from the menu', async ({ page }) => {
