@@ -74,6 +74,7 @@ Use <kbd>Cmd</kbd> on macOS and <kbd>Ctrl</kbd> on Windows and Linux. Shortcuts 
 
 - Resizable split panes (drag the handle, or focus it and use the arrow keys)
 - Collapsible editor for distraction-free reading
+- Document outline: a side panel listing the headings that jumps to a section and highlights the one you're reading (it slides over the preview on mobile)
 - Light and dark themes
 - Responsive layout with editor/preview tabs on mobile
 
@@ -191,6 +192,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/file-launch.js`            | Opens files the OS launches the installed app with       |
 | `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
 | `lib/offline.js`                | Service worker registration and the update prompt        |
+| `lib/outline.js`                | Document outline side panel                              |
 | `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
 | `lib/remote-images.js`          | Remote image blocking and placeholders                   |
 | `lib/icons.js`                  | Lucide icon helpers                                      |
