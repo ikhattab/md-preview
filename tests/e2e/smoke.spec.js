@@ -522,6 +522,33 @@ test('undoes an import that replaced the document', async ({ page }) => {
   await expect(editor).toHaveValue(/More/);
 });
 
+test('replaces the welcome document without asking', async ({ browser }) => {
+  const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
+
+  // A first visit, before anything has been saved.
+  async function firstVisit() {
+    const page = await (await browser.newContext()).newPage();
+    await page.goto('/');
+    await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+    return page;
+  }
+
+  let page = await firstVisit();
+  await page.locator('#importFileInput').setInputFiles(file);
+  await expect(page.locator('#editor')).toHaveValue('# Notes\n');
+  await expect(page.locator('#importConfirmDialog')).toBeHidden();
+  await expect(page.locator('#mdToast')).toHaveText('Imported notes.md');
+  await page.context().close();
+
+  // Once the welcome document has been edited, it's the reader's work.
+  page = await firstVisit();
+  await page.locator('#editor').press('End');
+  await page.locator('#editor').pressSequentially(' edited');
+  await page.locator('#importFileInput').setInputFiles(file);
+  await expect(page.locator('#importConfirmDialog')).toBeVisible();
+  await page.context().close();
+});
+
 test('shows an imported document for reading, until the editor is reopened', async ({ page }) => {
   const editorPane = page.locator('#editorPane');
   const preview = page.locator('#preview');
