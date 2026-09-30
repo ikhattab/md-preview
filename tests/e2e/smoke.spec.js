@@ -613,6 +613,58 @@ async function getShortcutModifier(page) {
   return tooltip.includes('Ctrl+') ? 'Control' : 'Meta';
 }
 
+// Reloads the page as if the installed app were launched by the OS with `file`
+// (or with no file, like a normal launch). Later launches that reuse the open
+// window (`client_mode: "focus-existing"`) go through `window.launchFile(file)`.
+async function launchApp(page, file = null) {
+  await page.addInitScript((file) => {
+    const toHandle = ({ name, content }) => ({
+      kind: 'file',
+      name,
+      getFile: async () => new File([content], name, { type: 'text/markdown' }),
+    });
+    Object.defineProperty(window, 'launchQueue', {
+      configurable: true,
+      value: {
+        setConsumer: (consumer) => {
+          window.launchFile = (f) => consumer({ files: f ? [toHandle(f)] : [] });
+          window.launchFile(file);
+        },
+      },
+    });
+  }, file);
+  await page.reload();
+}
+
+test('opens a file the OS launched the installed app with', async ({ page }) => {
+  await launchApp(page, { name: 'launched.md', content: '# Launched notes\n' });
+  await expect(page.locator('#importConfirmDesc')).toContainText('launched.md');
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(page.locator('#editor')).toHaveValue('# Launched notes\n');
+  await expect(page.locator('#preview h1')).toHaveText('Launched notes');
+
+  // Opening another file while the app is running reuses this window.
+  await page.evaluate(() => window.launchFile({ name: 'second.md', content: '# Second\n' }));
+  await expect(page.locator('#importConfirmDesc')).toContainText('second.md');
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(page.locator('#preview h1')).toHaveText('Second');
+});
+
+test('ignores launches without a file', async ({ page }) => {
+  await launchApp(page);
+  await expect(page.locator('#preview h1')).toHaveText('Smoke Test');
+  await expect(page.locator('#importConfirmDialog')).toBeHidden();
+});
+
+test('loads normally in browsers without launchQueue', async ({ page }) => {
+  await page.addInitScript(() => {
+    delete window.launchQueue;
+  });
+  await page.reload();
+  expect(await page.evaluate(() => 'launchQueue' in window)).toBe(false);
+  await expect(page.locator('#preview h1')).toHaveText('Smoke Test');
+});
+
 test('imports and downloads with keyboard shortcuts', async ({ page }) => {
   const mod = await getShortcutModifier(page);
   await page.locator('#editor').focus();

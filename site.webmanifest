@@ -19,5 +19,16 @@
   ],
   "theme_color": "#faf7f1",
   "background_color": "#faf7f1",
-  "display": "standalone"
+  "display": "standalone",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/markdown": [".md", ".markdown"]
+      }
+    }
+  ]
 }

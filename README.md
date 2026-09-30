@@ -54,6 +54,7 @@ https://github.com/user-attachments/assets/2c939b81-dc71-47d6-9a8c-8cd2fbd9ffe4
 ### Import and export
 
 - Import `.md`, `.markdown`, or `.txt` files with the file picker or by dragging a file onto the editor (you're asked before your current content is replaced)
+- Open `.md` and `.markdown` files from your file manager (double-click or **Open with**) after installing the app in Chrome or Edge. This uses the [File Handling API](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/file_handlers), which only Chromium browsers support. If the app is already open, the file opens in that window
 - Export as:
   - **Markdown** (`.md`) source
   - **HTML**: a self-contained file with embedded styles and optional base64-inlined images
@@ -183,6 +184,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/header-menu.js`            | Mobile overflow menu for the header controls             |
 | `lib/content.js`                | Auto-save and content loading                            |
 | `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
+| `lib/file-launch.js`            | Opens files the OS launches the installed app with       |
 | `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
 | `lib/offline.js`                | Service worker registration and the update prompt        |
 | `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
