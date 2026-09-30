@@ -560,6 +560,43 @@ test('loads every image before printing a long PDF export', async ({ page }) => 
     .toEqual([...Array(imageCount).fill(true), false]);
 });
 
+const flowchart = (label) => `\`\`\`mermaid\ngraph TD\n  A[${label}] --> B[End]\n\`\`\``;
+
+test('re-renders only the Mermaid diagrams that changed', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const editor = page.locator('#editor');
+  const svgs = preview.locator('.mermaid.mermaid-rendered > svg');
+  const doc = (intro, labels) => [`# Diagrams\n\n${intro}`, ...labels.map(flowchart)].join('\n\n');
+  // Marks each rendered SVG, so a re-rendered diagram shows up as unmarked.
+  const markSvgs = () =>
+    svgs.evaluateAll((els) => els.forEach((el, i) => (el.dataset.testMark = String(i))));
+  const readMarks = () => svgs.evaluateAll((els) => els.map((el) => el.dataset.testMark ?? null));
+  const findDuplicateIds = () =>
+    preview.evaluate((el) => {
+      const ids = [...el.querySelectorAll('[id]')].map((node) => node.id);
+      return ids.filter((id, i) => ids.indexOf(id) !== i);
+    });
+
+  await editor.fill(doc('Intro', ['Same', 'Same', 'Other']));
+  await expect(svgs).toHaveCount(3);
+  await markSvgs();
+
+  await editor.fill(doc('Intro, edited', ['Same', 'Same', 'Other']));
+  await expect(preview.getByText('Intro, edited')).toBeVisible();
+  expect(await readMarks()).toEqual(['0', '1', '2']);
+
+  await editor.fill(doc('Intro, edited', ['Same', 'Same', 'Changed', 'Same']));
+  await expect(svgs).toHaveCount(4);
+  await expect(svgs.nth(2)).toContainText('Changed');
+  expect(await readMarks()).toEqual(['0', '1', null, null]);
+  expect(await findDuplicateIds()).toEqual([]);
+
+  await markSvgs();
+  await page.locator('#themeToggle').click();
+  await expect.poll(readMarks).toEqual([null, null, null, null]);
+  expect(await findDuplicateIds()).toEqual([]);
+});
+
 function readMermaidNodeFill(root) {
   return root
     .locator('.mermaid svg .node .label-container')
@@ -741,6 +778,22 @@ test('blocks remote images until the reader loads them', async ({ page }) => {
   expect(requests).toContain('/markdown.png');
   expect(requests).toContain('/mermaid.png');
   expect(page.context().pages()).toHaveLength(1);
+});
+
+test('blocks a diagram that was rendered before blocking was turned on', async ({ page }) => {
+  await routeRemoteImages(page);
+  const preview = page.locator('#preview');
+  const imageUrl = `${IMAGE_ORIGIN}/mermaid.png`;
+  await page
+    .locator('#editor')
+    .fill(
+      `# Diagram\n\n\`\`\`mermaid\nflowchart TD\n  P@{ img: "${imageUrl}", w: 4, h: 4 }\n\`\`\`\n`
+    );
+  await expect(preview.locator(`.mermaid svg image[href="${imageUrl}"]`)).toHaveCount(1);
+
+  await turnOnImageBlocking(page);
+  await expect(preview.locator('.blocked-image')).toContainText('Diagram may load remote images');
+  expect(await remoteReferences(page)).toEqual([]);
 });
 
 test('keeps blocking images that were not on screen when the reader loaded images', async ({
