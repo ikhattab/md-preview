@@ -92,6 +92,10 @@ $$
 graph LR
   Write --> Preview --> Export
 ```
+
+A claim that needs a source.[^1]
+
+[^1]: Footnotes link to the note and back, as on GitHub.
 ````
 
 ### Lint rules
