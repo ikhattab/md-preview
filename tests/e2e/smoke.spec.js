@@ -516,9 +516,33 @@ test('undoes an import that replaced the document', async ({ page }) => {
   // Undo is withdrawn once the imported document is edited.
   await importReplacing(page, 'notes.md', '# Imported notes\n');
   await expect(undo).toBeVisible();
+  await page.locator('#editorPane').click();
   await editor.pressSequentially('More');
   await expect(undo).toBeHidden();
   await expect(editor).toHaveValue(/More/);
+});
+
+test('shows an imported document for reading, until the editor is reopened', async ({ page }) => {
+  const editorPane = page.locator('#editorPane');
+  const preview = page.locator('#preview');
+  await preview.evaluate((el) => (el.scrollTop = el.scrollHeight));
+
+  await importReplacing(page, 'notes.md', fixture.replace('# Smoke Test', '# Imported'));
+  await expect(editorPane).toHaveClass(/collapsed/);
+  await expect(preview.locator('h1')).toHaveText('Imported');
+  expect(await preview.evaluate((el) => el.scrollTop)).toBe(0);
+
+  // Undo puts the editor back along with the document.
+  await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
+  await expect(editorPane).not.toHaveClass(/collapsed/);
+
+  // Reopening the editor after an import keeps it open for later imports.
+  await importReplacing(page, 'notes.md', '# First\n');
+  await expect(editorPane).toHaveClass(/collapsed/);
+  await editorPane.click();
+  await importReplacing(page, 'notes.md', '# Second\n');
+  await expect(preview.locator('h1')).toHaveText('Second');
+  await expect(editorPane).not.toHaveClass(/collapsed/);
 });
 
 function dragFile(page, { name, type, content = '' }) {
@@ -765,6 +789,23 @@ test.describe('mobile header', () => {
     await page.keyboard.press('Tab');
     await expect(menu).toBeHidden();
     await expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('switches to the Preview tab after an import, and back on Undo', async ({ page }) => {
+    const previewTab = page.locator('.view-tab[data-view="preview"]');
+    const editorTab = page.locator('.view-tab[data-view="editor"]');
+    const preview = page.locator('#preview');
+    await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
+    await preview.evaluate((el) => (el.scrollTop = el.scrollHeight));
+
+    await importReplacing(page, 'notes.md', fixture.replace('# Smoke Test', '# Imported'));
+    await expect(previewTab).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#previewPane')).toHaveClass(/mobile-active/);
+    expect(await preview.evaluate((el) => el.scrollTop)).toBe(0);
+
+    await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
+    await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#editorPane')).toHaveClass(/mobile-active/);
   });
 
   test('imports and exports from the menu', async ({ page }) => {
