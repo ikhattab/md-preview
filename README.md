@@ -181,6 +181,7 @@ Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.d
 | `lib/storage.js`                | `localStorage` helpers                                   |
 | `lib/utils.js`                  | Debounce, throttle, and string helpers                   |
 | `lib/preview.js`                | Markdown parsing, sanitization, Mermaid, preview updates |
+| `lib/preview-blocks.js`         | Updates only the preview blocks that changed             |
 | `lib/frontmatter.js`            | YAML frontmatter detection and metadata table            |
 | `lib/gutter.js`                 | Line-number gutter                                       |
 | `lib/lint.js`                   | Lint rules and panel UI                                  |
