@@ -597,6 +597,94 @@ test('re-renders only the Mermaid diagrams that changed', async ({ page }) => {
   expect(await findDuplicateIds()).toEqual([]);
 });
 
+test('re-renders only the blocks that changed while typing', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const editor = page.locator('#editor');
+  const blocks = preview.locator(':scope > *');
+  const readMarks = () => blocks.evaluateAll((els) => els.map((el) => el.dataset.testMark ?? null));
+
+  await editor.fill(
+    [
+      '# Title',
+      'First paragraph.',
+      'Second paragraph.',
+      '| A | B |\n| - | - |\n| 1 | 2 |',
+      '```js\nconst last = true;\n```',
+    ].join('\n\n')
+  );
+  await expect(blocks).toHaveCount(5);
+  await blocks.evaluateAll((els) => els.forEach((el, i) => (el.dataset.testMark = String(i))));
+
+  await editor.evaluate((el) => {
+    const end = el.value.indexOf('Second paragraph') + 'Second paragraph'.length;
+    el.focus();
+    el.setSelectionRange(end, end);
+  });
+  await page.keyboard.type(', edited');
+  await expect(preview.locator('p').nth(1)).toHaveText('Second paragraph, edited.');
+  expect(await readMarks()).toEqual(['0', '1', null, '3', '4']);
+
+  await editor.press('End');
+  await editor.press('Enter');
+  await editor.press('Enter');
+  await page.keyboard.type('New paragraph.');
+  await expect(preview.locator('p').nth(2)).toHaveText('New paragraph.');
+  expect(await readMarks()).toEqual(['0', '1', null, null, '3', '4']);
+});
+
+test('matches a fresh render after edits that affect other blocks', async ({ page }) => {
+  const preview = page.locator('#preview');
+  const editor = page.locator('#editor');
+  // The empty comments mark where each block starts.
+  const readPreviewHtml = () => preview.evaluate((el) => el.innerHTML.replaceAll('<!---->', ''));
+  const doc = ({ intro, heading, outro, refs }) =>
+    [
+      '# Notes',
+      intro,
+      heading,
+      '<details>\n<summary>More</summary>',
+      'Hidden paragraph with a [reference link][ref].',
+      '</details>',
+      '## Notes',
+      outro,
+      refs,
+    ].join('\n\n');
+
+  await editor.fill(
+    doc({
+      intro: 'Intro with a footnote.[^a]',
+      heading: 'Plain paragraph.',
+      outro: 'Outro.',
+      refs: '[^a]: First footnote.',
+    })
+  );
+  await expect(preview.locator('.footnotes li')).toHaveCount(1);
+
+  const edited = doc({
+    intro: 'Intro with an earlier footnote[^c] and a footnote.[^a]',
+    heading: '## Notes',
+    outro: 'Outro with another footnote.[^b]',
+    refs: '[^a]: First footnote.\n\n[^b]: Second footnote.\n\n[^c]: Earlier footnote.\n\n[ref]: https://example.com',
+  });
+  await editor.fill(edited);
+  await expect(preview.locator('.footnotes li')).toHaveCount(3);
+  await expect(preview.locator('details p a')).toHaveAttribute('href', 'https://example.com');
+  // The new heading takes the id the one after it had.
+  expect(await preview.locator('h1, h2').evaluateAll((els) => els.map((el) => el.id))).toEqual([
+    'user-content-notes',
+    'user-content-notes-1',
+    'user-content-notes-2',
+    'user-content-footnote-label',
+  ]);
+  const incremental = await readPreviewHtml();
+
+  await editor.fill('');
+  await expect(preview.locator(':scope > *')).toHaveCount(0);
+  await editor.fill(edited);
+  await expect(preview.locator('.footnotes li')).toHaveCount(3);
+  expect(incremental).toBe(await readPreviewHtml());
+});
+
 function readMermaidNodeFill(root) {
   return root
     .locator('.mermaid svg .node .label-container')
@@ -838,6 +926,38 @@ test('keeps blocking images that were not on screen when the reader loaded image
   await expect(page.locator('.blocked-image')).toContainText('new');
   await expect(page.locator('.blocked-image-load')).toHaveCount(0);
   expect(requests).not.toContain('/new.png');
+});
+
+test('keeps blocking images in blocks that were not re-rendered', async ({ page }) => {
+  const requests = await routeRemoteImages(page);
+  const preview = page.locator('#preview');
+  const editor = page.locator('#editor');
+  const placeholders = preview.locator('.blocked-image');
+
+  await turnOnImageBlocking(page);
+  await editor.fill(
+    [
+      '# Images',
+      `![remote](${IMAGE_ORIGIN}/remote.png)`,
+      `\`\`\`mermaid\nflowchart TD\n  P@{ img: "${IMAGE_ORIGIN}/mermaid.png", w: 4, h: 4 }\n\`\`\``,
+      'Some text.',
+    ].join('\n\n')
+  );
+  await expect(placeholders).toHaveCount(2);
+
+  await editor.press('End');
+  await page.keyboard.type(' More text.');
+  await expect(preview.getByText('Some text. More text.')).toBeVisible();
+  await expect(placeholders).toHaveCount(2);
+  expect(await remoteReferences(page)).toEqual([]);
+  expect(requests).toEqual([]);
+
+  await placeholders.first().getByRole('button', { name: 'Load images' }).click();
+  await expect(placeholders).toHaveCount(0);
+  await expect(preview.locator('.preview-figure img[alt="remote"]')).toBeVisible();
+  await expect(preview.locator('.mermaid svg image')).toHaveCount(1);
+  expect(requests).toContain('/remote.png');
+  expect(requests).toContain('/mermaid.png');
 });
 
 async function importReplacing(page, name, content) {
