@@ -1026,6 +1026,59 @@ test('replaces the welcome document without asking', async ({ browser }) => {
   await page.context().close();
 });
 
+test("reopens the welcome guide, with Undo when it replaced the reader's work", async ({
+  page,
+}) => {
+  const editor = page.locator('#editor');
+  const toast = page.locator('#mdToast');
+  const undo = toast.getByRole('button', { name: 'Undo' });
+  const welcome = page.locator('#preview h1');
+
+  await page.locator('#welcomeBtn').click();
+  await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
+  await expect(toast).toContainText('Opened the welcome guide');
+  // The guide invites editing, so the editor stays open beside it.
+  await expect(page.locator('#editorPane')).not.toHaveClass(/collapsed/);
+  expect(await editor.evaluate((el) => [el.selectionStart, el.scrollTop])).toEqual([0, 0]);
+
+  await undo.click();
+  await expect(editor).toHaveValue(fixture);
+  await expect(toast).toHaveText('Your document is back');
+
+  // An empty editor holds nothing to undo.
+  await editor.fill('');
+  await page.locator('#welcomeBtn').click();
+  await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
+  await expect(undo).toBeHidden();
+
+  // The guide is saved like any document, and importing over it still doesn't ask.
+  await page.reload();
+  await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
+  await page.locator('#importFileInput').setInputFiles({
+    name: 'notes.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# Notes\n'),
+  });
+  await expect(page.locator('#importConfirmDialog')).toBeHidden();
+  await expect(editor).toHaveValue('# Notes\n');
+});
+
+test('renders the welcome guide fully and without lint warnings', async ({ page }) => {
+  const preview = page.locator('#preview');
+  await page.locator('#welcomeBtn').click();
+  await page.locator('#lintToggle').click();
+
+  await expect(preview.locator('.mermaid.mermaid-rendered > svg')).toBeVisible();
+  await expect(preview.locator('.katex-display')).toHaveCount(1);
+  await expect(preview.locator('.markdown-alert')).toHaveCount(3);
+  await expect(preview.locator('.footnotes li')).toHaveCount(1);
+  await expect(preview.locator('pre code.hljs')).toHaveCount(2);
+  await expect(preview.locator('img[src="/sample-landscape.svg"]')).toBeVisible();
+  await expect(preview.locator('kbd', { hasText: '\\' })).toHaveCount(1);
+  expect(await preview.evaluate(findBrokenInPageLinks)).toEqual([]);
+  await expect.poll(() => readLintItems(page)).toEqual(['No issues found']);
+});
+
 test('shows an imported document for reading, until the editor is reopened', async ({ page }) => {
   const editorPane = page.locator('#editorPane');
   const preview = page.locator('#preview');
@@ -1260,6 +1313,7 @@ const HEADER_CONTROLS = [
   '#importBtn',
   '#exportMenuBtn',
   '#themeToggle',
+  '#welcomeBtn',
   '.repo-link',
 ];
 
@@ -1365,6 +1419,22 @@ test.describe('mobile header', () => {
     await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
     await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#editorPane')).toHaveClass(/mobile-active/);
+  });
+
+  test('switches to the Preview tab for the welcome guide, and back on Undo', async ({ page }) => {
+    const editorTab = page.locator('.view-tab[data-view="editor"]');
+    const previewTab = page.locator('.view-tab[data-view="preview"]');
+    await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
+
+    await page.locator('#headerMenuBtn').click();
+    await page.locator('#welcomeBtn').click();
+    await expect(page.locator('#headerMenu')).toBeHidden();
+    await expect(previewTab).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+
+    await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
+    await expect(editorTab).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#editor')).toHaveValue(fixture);
   });
 
   test('opens the outline over the preview from the menu', async ({ page }) => {
