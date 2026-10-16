@@ -218,6 +218,7 @@ button:focus-visible,
 .outline-toggle:focus-visible,
 .remote-images-toggle:focus-visible,
 .theme-toggle:focus-visible,
+.welcome-btn:focus-visible,
 .repo-link:focus-visible,
 .file-action-btn:focus-visible,
 .resize-handle:focus-visible {
@@ -238,6 +239,7 @@ button:focus:not(:focus-visible),
 .outline-toggle:focus:not(:focus-visible),
 .remote-images-toggle:focus:not(:focus-visible),
 .theme-toggle:focus:not(:focus-visible),
+.welcome-btn:focus:not(:focus-visible),
 .file-action-btn:focus:not(:focus-visible),
 .resize-handle:focus:not(:focus-visible),
 textarea:focus:not(:focus-visible) {
@@ -249,6 +251,7 @@ textarea:focus:not(:focus-visible) {
 .scroll-sync-toggle,
 .outline-toggle,
 .remote-images-toggle,
+.welcome-btn,
 .header-menu-btn,
 .repo-link {
   display: flex;
@@ -264,6 +267,7 @@ textarea:focus:not(:focus-visible) {
 .scroll-sync-toggle:hover,
 .outline-toggle:hover,
 .remote-images-toggle:hover,
+.welcome-btn:hover,
 .header-menu-btn:hover,
 .header-menu-btn[aria-expanded='true'],
 .repo-link:hover {
@@ -570,6 +574,7 @@ textarea:focus:not(:focus-visible) {
   .header-menu .remote-images-toggle,
   .header-menu .file-action-btn,
   .header-menu .theme-toggle,
+  .header-menu .welcome-btn,
   .header-menu .repo-link {
     justify-content: flex-start;
     gap: 0.75rem;
@@ -590,6 +595,7 @@ textarea:focus:not(:focus-visible) {
   .header-menu .remote-images-toggle:hover,
   .header-menu .file-action-btn:hover,
   .header-menu .theme-toggle:hover,
+  .header-menu .welcome-btn:hover,
   .header-menu .repo-link:hover {
     color: var(--text-primary);
     background: var(--bg-tertiary);
