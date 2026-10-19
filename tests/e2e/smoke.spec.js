@@ -214,8 +214,17 @@ for (const { rule, markdown, expected } of LINT_CASES) {
   });
 }
 
+// Chromium 156+ logs this when DOMPurify's inert parser meets an inline
+// handler, even though the handler never runs. Only this test renders one.
+const INLINE_HANDLER_CSP_REPORT = /^Executing inline event handler violates .*'script-src 'self''/;
+
 test('sanitizes untrusted HTML', async ({ page }) => {
   const preview = page.locator('#preview');
+
+  await page
+    .locator('#editor')
+    .fill(`${fixture}<div onclick="window.__xss = 'handler'">untrusted div</div>\n`);
+  await expect(preview.getByText('untrusted div')).toBeVisible();
 
   await expect(preview.locator('script')).toHaveCount(0);
   await expect(preview.locator('[onclick]')).toHaveCount(0);
@@ -224,6 +233,7 @@ test('sanitizes untrusted HTML', async ({ page }) => {
   await preview.getByText('untrusted div').click();
   await preview.getByText('untrusted link').click();
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  errors = errors.filter((message) => !INLINE_HANDLER_CSP_REPORT.test(message));
 });
 
 for (const viewport of [

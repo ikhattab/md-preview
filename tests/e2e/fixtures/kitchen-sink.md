@@ -71,5 +71,5 @@ graph TD
 ### Repeat
 
 <script>window.__xss = 'script';</script>
-<div onclick="window.__xss = 'handler'">untrusted div</div>
+
 <a href="javascript:window.__xss = 'href'">untrusted link</a>
