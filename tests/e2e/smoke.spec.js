@@ -67,6 +67,13 @@ test('renders every supported markdown feature', async ({ page }) => {
   await expect(preview.locator('.katex-display')).toHaveCount(1);
   await expect(preview.locator('p .katex')).toHaveCount(1);
   await expect(preview.locator('.katex-error')).toHaveCount(0);
+  // The MathML copy is for screen readers; without KaTeX's CSS it shows as duplicate text
+  await expect(preview.locator('.katex-display .katex-mathml')).toHaveCSS('position', 'absolute');
+  const katexFontLoaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts].some((f) => f.family.includes('KaTeX') && f.status === 'loaded');
+  });
+  expect(katexFontLoaded).toBe(true);
 
   await expect(preview.locator('.mermaid-error')).toHaveCount(0);
   await expect(preview.locator('.mermaid > svg')).toContainText('Start');
