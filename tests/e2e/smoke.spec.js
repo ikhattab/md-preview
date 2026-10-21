@@ -81,6 +81,16 @@ test('renders every supported markdown feature', async ({ page }) => {
   await expect(preview.locator('.preview-figure img[alt="pixel"]')).toBeVisible();
 });
 
+test('highlights PHP code blocks', async ({ page }) => {
+  await page
+    .locator('#editor')
+    .fill('```php\n<?php\nfunction greet($name) {\n  echo "Hi $name";\n}\n```\n');
+
+  const code = page.locator('#preview pre code.language-php');
+  await expect(code.locator('.hljs-keyword').first()).toHaveText('function');
+  await expect(code.locator('.hljs-variable').first()).toHaveText('$name');
+});
+
 test('renders GitHub alerts with a title and distinct color in both themes', async ({ page }) => {
   const preview = page.locator('#preview');
   const alerts = preview.locator('.markdown-alert');
