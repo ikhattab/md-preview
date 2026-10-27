@@ -1809,6 +1809,29 @@ textarea:focus:not(:focus-visible) {
   overflow-x: auto;
 }
 
+/* Pele reads its colors from these, so diagrams follow the theme without re-rendering. */
+.mermaid,
+.media-viewer-stage {
+  --pele-bg: var(--bg-secondary);
+  --pele-fg: var(--text-primary);
+  --pele-muted: var(--text-secondary);
+  --pele-line: var(--text-secondary);
+  --pele-surface: var(--bg-surface);
+  --pele-surface-alt: var(--bg-tertiary);
+  --pele-border: var(--border-hover);
+  --pele-accent: var(--accent);
+  --pele-font: var(--font-sans);
+  --pele-font-mono: var(--font-mono);
+  --pele-series-1: var(--accent);
+  --pele-series-2: var(--alert-note);
+  --pele-series-3: var(--alert-tip);
+  --pele-series-4: var(--alert-warning);
+  --pele-series-5: var(--alert-important);
+  --pele-series-6: var(--alert-caution);
+  --pele-series-7: var(--accent-muted);
+  --pele-series-8: var(--text-secondary);
+}
+
 .mermaid.mermaid-has-toolbar {
   padding-top: 2.5rem;
 }
@@ -1937,6 +1960,7 @@ textarea:focus:not(:focus-visible) {
   padding: 3.5rem 1.5rem 1.5rem;
   overflow: auto;
   box-sizing: border-box;
+  --pele-bg: var(--bg-primary);
 }
 
 .media-viewer-stage img {

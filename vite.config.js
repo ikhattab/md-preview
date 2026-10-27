@@ -22,8 +22,6 @@ const STATIC_FILES = [
 export default defineConfig({
   build: {
     outDir: 'dist',
-    // Mermaid's shared parser chunk is ~660 KB but lazy-loaded only for diagram blocks
-    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         entryFileNames: 'app.[hash].js',
