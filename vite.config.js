@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import { cpSync, existsSync } from 'fs';
 import { join } from 'path';
 import { cloudflareHeaders } from './scripts/cloudflare-headers.js';
+import { prerenderWelcome } from './scripts/prerender-welcome.js';
 import { serviceWorker } from './scripts/service-worker.js';
 
 const STATIC_FILES = [
+  '404.html',
   '_headers',
   'robots.txt',
   'sitemap.xml',
@@ -47,6 +49,7 @@ export default defineConfig({
         }
       },
     },
+    prerenderWelcome(),
     cloudflareHeaders(),
     serviceWorker(),
   ],
