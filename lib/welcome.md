@@ -1,6 +1,6 @@
 # Welcome to mdfor.dev ✨
 
-A fast, private markdown editor. Write in the editor and the preview updates as you type. Everything stays in this browser: no account, no server, no tracking.
+A fast, private online markdown editor with live preview: write in the editor and the preview updates as you type. Everything stays in this browser: no account, no server, no tracking.
 
 This page is a sample document, so go ahead and change it, clear it, or import your own file. You can bring it back any time with the **?** button in the header (**Welcome guide** in the menu on phones).
 

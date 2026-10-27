@@ -1071,6 +1071,22 @@ test('replaces the welcome document without asking', async ({ browser }) => {
   await page.context().close();
 });
 
+test('serves the welcome guide in the HTML, replaced by saved content once the app runs', async ({
+  page,
+  browser,
+}) => {
+  const noScript = await browser.newContext({ javaScriptEnabled: false });
+  const crawler = await noScript.newPage();
+  await crawler.goto('/');
+  await expect(crawler.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+  await expect(crawler.locator('#preview img')).toHaveCount(0);
+  await noScript.close();
+
+  await page.reload();
+  await expect(page.locator('#preview h1')).toHaveText(['Smoke Test']);
+  await expect(page.locator('#preview')).not.toContainText('Welcome to mdfor.dev');
+});
+
 test("reopens the welcome guide, with Undo when it replaced the reader's work", async ({
   page,
 }) => {
