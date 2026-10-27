@@ -618,9 +618,11 @@ test('re-renders only the Mermaid diagrams that changed', async ({ page }) => {
   expect(await readMarks()).toEqual(['0', '1', null, null]);
   expect(await findDuplicateIds()).toEqual([]);
 
+  // Diagram colors come from CSS variables, so a theme change keeps every SVG.
   await markSvgs();
   await page.locator('#themeToggle').click();
-  await expect.poll(readMarks).toEqual([null, null, null, null]);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await readMarks()).toEqual(['0', '1', '2', '3']);
   expect(await findDuplicateIds()).toEqual([]);
 });
 
@@ -714,10 +716,26 @@ test('matches a fresh render after edits that affect other blocks', async ({ pag
 
 function readMermaidNodeFill(root) {
   return root
-    .locator('.mermaid svg .node .label-container')
+    .locator('svg .pele-node > rect')
     .first()
     .evaluate((el) => getComputedStyle(el).fill);
 }
+
+test('shows a full screen diagram in the current theme', async ({ page }) => {
+  const preview = page.locator('#preview');
+  await page.locator('#themeToggle').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  const diagram = preview.locator('.mermaid.mermaid-rendered').first();
+  await diagram.hover();
+  await diagram.getByRole('button', { name: 'View diagram full screen' }).click();
+  const viewerSvg = page.locator('#mediaViewerStage svg');
+  await expect(viewerSvg).toBeVisible();
+  await expect(viewerSvg.locator('[id]')).toHaveCount(0);
+  expect(await readMermaidNodeFill(page.locator('#mediaViewerStage'))).toBe(
+    await readMermaidNodeFill(preview)
+  );
+});
 
 test('prints a PDF export in the chosen theme and restores the live theme', async ({ page }) => {
   const preview = page.locator('#preview');
@@ -730,7 +748,7 @@ test('prints a PDF export in the chosen theme and restores the live theme', asyn
 
   await page.addInitScript(() => {
     window.print = () => {
-      const node = document.querySelector('.mermaid svg .node .label-container');
+      const node = document.querySelector('.mermaid svg .pele-node > rect');
       window.top.__printed = {
         title: document.title,
         appTitle: window.top.document.title,
