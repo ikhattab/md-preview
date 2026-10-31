@@ -112,4 +112,6 @@ tags: [changelog, v2]
 
 **Happy writing!** 🚀
 
+Made by [Ihab Khattab](https://ihabkhattab.com/).
+
 [^1]: Each one links back to where it was referenced.
