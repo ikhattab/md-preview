@@ -1295,6 +1295,31 @@ test('scroll sync follows the editor to where it stops', async ({ page }) => {
     .toBeLessThan(2);
 });
 
+test('hides a tooltip whose element is removed', async ({ page }) => {
+  const editor = page.locator('#editor');
+  await page.locator('#lintToggle').click();
+  await editor.fill('# Title\n\nTrailing spaces \n');
+  const icon = page.locator('#lineGutter .line-error-icon').first();
+  await icon.hover();
+  await expect(page.locator('.gutter-tooltip')).toBeVisible();
+
+  // Fixing the warning redraws the gutter without the icon under the pointer.
+  await editor.evaluate((el) => {
+    el.value = '# Title\n\nNo trailing spaces\n';
+    el.dispatchEvent(new Event('input'));
+  });
+  await expect(icon).toHaveCount(0);
+  await expect(page.locator('.gutter-tooltip')).toBeHidden();
+});
+
+test('leaves focus where the reader clicks after closing the Export menu', async ({ page }) => {
+  await page.locator('#exportMenuBtn').click();
+  await expect(page.locator('#exportMenuPopover')).toBeVisible();
+  await page.locator('#editor').click();
+  await expect(page.locator('#exportMenuPopover')).toBeHidden();
+  await expect(page.locator('#editor')).toBeFocused();
+});
+
 test('replaces the welcome document without asking', async ({ browser }) => {
   const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
 

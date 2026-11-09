@@ -60,6 +60,25 @@ stateDiagram-v2
   file --> file: RESTORED [guarded]
 ```
 
+## dropOverlay
+
+Dragging a file over the window. The overlay says whether dropping will open it; drags that start inside the page, such as selected text, keep their usual behavior.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `#dropOverlay (data-state is ready or unsupported while a file is over the window)`
+- Context: `allowed`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> idle: DRAG_ENTER [blocked]
+  idle --> over: DRAG_ENTER
+  idle --> internal: INTERNAL_DRAG_START
+  internal --> idle: INTERNAL_DRAG_END
+  over --> idle: DRAG_LEAVE
+  over --> idle: DROP
+```
+
 ## editorPane
 
 The editor beside the preview on wide screens: open, or collapsed so the preview fills the window. Importing a file or pasting a whole document collapses it for reading, unless the reader reopened it after that before, which means they want to edit. Both the state and the width are saved.
@@ -102,6 +121,38 @@ stateDiagram-v2
   printing --> open: OPEN
 ```
 
+## exportMenu
+
+The Export menu of formats. Choosing one, Escape, or clicking or tabbing away closes it.
+
+- Defined in [`lib/machines/menus.js`](../lib/machines/menus.js)
+- State shown on `#exportMenu`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> open: TOGGLE
+  open --> closed: CLOSE
+  open --> closed: TOGGLE
+```
+
+## headerMenu
+
+The "More options" panel that holds the header controls on narrow screens. Toggles and the Export submenu keep it open; other actions, Escape, clicking or tabbing away, and resizing to a wide screen close it.
+
+- Defined in [`lib/machines/menus.js`](../lib/machines/menus.js)
+- State shown on `#headerMenu`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> open: TOGGLE
+  open --> closed: CLOSE
+  open --> closed: TOGGLE
+```
+
 ## import
 
 Opening a file from the Import button, a drop, or the operating system. Replacing the reader's own work asks first; the latest file wins when several arrive close together.
@@ -121,6 +172,21 @@ stateDiagram-v2
   confirming --> reading: FILE
   confirming --> idle: CONFIRM
   confirming --> idle: CANCEL
+```
+
+## mediaViewer
+
+The full screen view of a diagram or image. Closing it returns focus to the button or image that opened it.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `#mediaViewerDialog`
+- Context: `trigger`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  open --> closed: CLOSE
 ```
 
 ## mobileView
@@ -221,4 +287,21 @@ stateDiagram-v2
   held --> shown: DISMISS [guarded]
   held --> hidden: DISMISS [isCurrent]
   held --> held: DISMISS [isSuspended]
+```
+
+## tooltip
+
+The tooltip for whatever element with data-tooltip is hovered or focused. It hides when the pointer or focus leaves, and when its element is removed from the page, such as a lint warning icon the gutter redraws.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `.gutter-tooltip`
+- Context: `anchor`
+
+```mermaid
+stateDiagram-v2
+  [*] --> hidden
+  hidden --> shown: SHOW
+  shown --> shown: SHOW
+  shown --> hidden: LEAVE [forAnchor]
+  shown --> hidden: ANCHOR_REMOVED
 ```
