@@ -1181,6 +1181,22 @@ test('undoes an import that replaced the document', async ({ page }) => {
   await expect(editor).toHaveValue(/More/);
 });
 
+test('brings an Undo back after a newer toast covers it', async ({ page }) => {
+  const toast = page.locator('#mdToast');
+  const undo = toast.getByRole('button', { name: 'Undo' });
+
+  await page.locator('#welcomeBtn').click();
+  await expect(undo).toBeVisible();
+  await page.locator('#preview').click();
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect(toast).toHaveText('Downloaded .md');
+
+  await expect(undo).toBeVisible();
+  await undo.click();
+  await expect(page.locator('#editor')).toHaveValue(fixture);
+  await expect(toast).toHaveText('Your document is back');
+});
+
 test('replaces the welcome document without asking', async ({ browser }) => {
   const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
 

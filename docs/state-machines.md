@@ -54,3 +54,29 @@ stateDiagram-v2
   chosen --> chosen: OVERRIDE
   chosen --> chosen: CLEAR_OVERRIDE
 ```
+
+## toast
+
+The status message at the bottom of the window. It hides after a while unless the reader is pointing at or tabbing through it. A toast with an action isn't lost when another one arrives: it comes back once the newer toast is gone.
+
+- Defined in [`lib/machines/toast.js`](../lib/machines/toast.js)
+- State shown on `#mdToast`
+- Context: `current`, `suspended`
+
+```mermaid
+stateDiagram-v2
+  [*] --> hidden
+  hidden --> shown: SHOW
+  shown --> shown: SHOW
+  shown --> held: HOLD
+  shown --> shown: TIMEOUT [guarded]
+  shown --> hidden: TIMEOUT [isCurrent]
+  shown --> shown: DISMISS [guarded]
+  shown --> hidden: DISMISS [isCurrent]
+  shown --> shown: DISMISS [isSuspended]
+  held --> held: SHOW
+  held --> shown: RELEASE
+  held --> shown: DISMISS [guarded]
+  held --> hidden: DISMISS [isCurrent]
+  held --> held: DISMISS [isSuspended]
+```
