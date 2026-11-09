@@ -174,6 +174,22 @@ stateDiagram-v2
   confirming --> idle: CANCEL
 ```
 
+## lint
+
+Checking the markdown for common problems, when turned on (saved). Results arrive a moment after typing stops and show in the gutter and the lint panel.
+
+- Defined in [`lib/machines/lint.js`](../lib/machines/lint.js)
+- State shown on `#lintToggle`
+- Context: `warnings`
+
+```mermaid
+stateDiagram-v2
+  [*] --> off
+  off --> on: TOGGLE
+  on --> off: TOGGLE
+  on --> on: RESULTS
+```
+
 ## mediaViewer
 
 The full screen view of a diagram or image. Closing it returns focus to the button or image that opened it.
@@ -201,6 +217,37 @@ stateDiagram-v2
   [*] --> editor
   editor --> preview: SHOW_PREVIEW
   preview --> editor: SHOW_EDITOR
+```
+
+## outline
+
+The list of the document's headings. It shows only while open and the document has headings (data-state is empty when it has none). On wide screens it is a side panel that stays open between visits; on narrow ones it covers the preview, opens only on request, and closes after jumping to a heading.
+
+- Defined in [`lib/machines/outline.js`](../lib/machines/outline.js)
+- State shown on `#outlinePanel`
+- Context: `hasHeadings`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> closed: HEADINGS
+  open --> closed: CLOSE
+  open --> open: HEADINGS
+```
+
+## remoteImages
+
+Whether the preview blocks images from other sites until the reader chooses to load them (saved). Turning it on or off, or opening another document, forgets which images were let through.
+
+- Defined in [`lib/machines/remote-images.js`](../lib/machines/remote-images.js)
+- State shown on `#remoteImagesToggle`
+
+```mermaid
+stateDiagram-v2
+  [*] --> off
+  off --> blocking: TOGGLE
+  blocking --> off: TOGGLE
 ```
 
 ## resize

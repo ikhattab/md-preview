@@ -13,6 +13,8 @@ import {
   scrollSyncMachine,
 } from '../../lib/machines/layout.js';
 import { dropOverlayMachine, tooltipMachine } from '../../lib/machines/overlays.js';
+import { isOutlineShown, outlineMachine } from '../../lib/machines/outline.js';
+import { lintMachine } from '../../lib/machines/lint.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -260,4 +262,26 @@ test('tooltip: leaving another element keeps it, and removal hides it', () => {
     'ANCHOR_REMOVED',
   ]);
   assert.deepEqual(values, ['shown', 'shown', 'shown', 'hidden']);
+});
+
+test('outline: shows only while open and the document has headings', () => {
+  const machine = createMachine(outlineMachine);
+  machine.send('OPEN');
+  assert.equal(isOutlineShown(machine.state), false);
+  machine.send({ type: 'HEADINGS', present: true });
+  assert.equal(isOutlineShown(machine.state), true);
+  machine.send('CLOSE');
+  assert.equal(isOutlineShown(machine.state), false);
+});
+
+test('lint: results only count while on, and turning off clears them', () => {
+  const warnings = [{ line: 1, message: 'MD041' }];
+  const machine = createMachine(lintMachine);
+  machine.send({ type: 'RESULTS', warnings });
+  assert.deepEqual(machine.context.warnings, []);
+  machine.send('TOGGLE');
+  machine.send({ type: 'RESULTS', warnings });
+  assert.deepEqual(machine.context.warnings, warnings);
+  machine.send('TOGGLE');
+  assert.deepEqual(machine.context.warnings, []);
 });
