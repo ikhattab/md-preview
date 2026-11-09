@@ -38,6 +38,7 @@ import {
   debouncedSave,
   loadContent,
   normalizeEditorPosition,
+  noteEditorInput,
   resetPaneScrollPositions,
   saveContent,
 } from './lib/content.js';
@@ -75,6 +76,7 @@ function refreshGutter() {
 
 function setupEventListeners() {
   editor.addEventListener('input', () => {
+    noteEditorInput();
     schedulePreviewUpdate();
     refreshGutter();
     debouncedSave();
