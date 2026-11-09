@@ -1071,6 +1071,29 @@ test('replaces the welcome document without asking', async ({ browser }) => {
   await page.context().close();
 });
 
+test('follows the system theme until the reader picks one', async ({ browser }) => {
+  const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
+  const html = page.locator('html');
+  const savedTheme = () => page.evaluate(() => localStorage.getItem('md-preview-theme'));
+
+  await page.goto('/');
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  expect(await savedTheme()).toBeNull();
+
+  await page.locator('#themeToggle').click();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  expect(await savedTheme()).toBe('light');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.context().close();
+});
+
 test('serves the welcome guide in the HTML, replaced by saved content once the app runs', async ({
   page,
   browser,
