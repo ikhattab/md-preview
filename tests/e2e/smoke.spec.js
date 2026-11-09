@@ -1366,6 +1366,20 @@ test("doesn't save the untouched welcome guide, so a later visit gets the curren
   await page.context().close();
 });
 
+test('highlights code in the dark theme from the first load', async ({ browser }) => {
+  const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('link#hljs-theme-dark')).toHaveCount(1);
+  expect(
+    await page.evaluate(() => [
+      document.getElementById('hljs-theme-light').disabled,
+      document.getElementById('hljs-theme-dark').disabled,
+    ])
+  ).toEqual([true, false]);
+  await page.context().close();
+});
+
 test('follows the system theme until the reader picks one', async ({ browser }) => {
   const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
   const html = page.locator('html');
