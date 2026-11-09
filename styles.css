@@ -938,6 +938,7 @@ textarea:focus:not(:focus-visible) {
 /* Resize Handle */
 .resize-handle {
   width: 1px; /* Invisible functionality via hit area, visible line via border */
+  touch-action: none; /* A touch drag resizes instead of scrolling */
   background: transparent;
   cursor: col-resize;
   position: relative;

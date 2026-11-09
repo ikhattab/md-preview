@@ -60,6 +60,25 @@ stateDiagram-v2
   file --> file: RESTORED [guarded]
 ```
 
+## editorPane
+
+The editor beside the preview on wide screens: open, or collapsed so the preview fills the window. Importing a file or pasting a whole document collapses it for reading, unless the reader reopened it after that before, which means they want to edit. Both the state and the width are saved.
+
+- Defined in [`lib/machines/layout.js`](../lib/machines/layout.js)
+- State shown on `#editorPane`
+- Context: `width`, `autoCollapse`, `collapsedForReading`
+
+```mermaid
+stateDiagram-v2
+  [*] --> open
+  open --> collapsed: TOGGLE
+  open --> collapsed: SHOW_FOR_READING [autoCollapseAllowed]
+  open --> open: RESIZED
+  collapsed --> open: TOGGLE [collapsedForReading]
+  collapsed --> open: TOGGLE
+  collapsed --> open: RESTORE [collapsedForReading]
+```
+
 ## exportDialog
 
 The HTML and PDF export dialog, from choosing options until the file downloads or the print dialog closes. The page shows the export theme while an export runs.
@@ -102,6 +121,59 @@ stateDiagram-v2
   confirming --> reading: FILE
   confirming --> idle: CONFIRM
   confirming --> idle: CANCEL
+```
+
+## mobileView
+
+Which pane a narrow screen shows: the editor or the preview, chosen with the tabs and saved. Wide screens show both and ignore it.
+
+- Defined in [`lib/machines/layout.js`](../lib/machines/layout.js)
+- State shown on `#mobileViewSwitcher`
+
+```mermaid
+stateDiagram-v2
+  [*] --> editor
+  editor --> preview: SHOW_PREVIEW
+  preview --> editor: SHOW_EDITOR
+```
+
+## resize
+
+Dragging the handle between the editor and the preview. A cancelled drag, such as an interrupted touch, puts the width back.
+
+- Defined in [`lib/machines/layout.js`](../lib/machines/layout.js)
+- State shown on `#resizeHandle`
+- Context: `startX`, `startWidth`, `width`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> dragging: START
+  dragging --> dragging: MOVE
+  dragging --> idle: END
+  dragging --> idle: CANCEL
+```
+
+## scrollSync
+
+Keeping the editor and preview scrolled to the same place, when turned on (saved). The pane being scrolled leads, and the other follows until it's been still briefly.
+
+- Defined in [`lib/machines/layout.js`](../lib/machines/layout.js)
+- State shown on `#scrollSyncToggle`
+
+```mermaid
+stateDiagram-v2
+  [*] --> off
+  off --> idle: TOGGLE
+  idle --> editor: SCROLLED [guarded]
+  idle --> preview: SCROLLED
+  idle --> off: TOGGLE
+  editor --> editor: SCROLLED [guarded]
+  editor --> idle: SETTLED
+  editor --> off: TOGGLE
+  preview --> preview: SCROLLED [guarded]
+  preview --> idle: SETTLED
+  preview --> off: TOGGLE
 ```
 
 ## theme

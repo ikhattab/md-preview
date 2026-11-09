@@ -1226,6 +1226,75 @@ test('forgets an imported file’s name once the editor is cleared', async ({ pa
   await expect(filename).toHaveValue('fresh-start');
 });
 
+test('keeps the editor width after starting collapsed', async ({ page }) => {
+  const editorPane = page.locator('#editorPane');
+  await page.evaluate(() => {
+    localStorage.setItem('md-preview-editor-width', '420');
+    localStorage.setItem('md-preview-editor-collapsed', 'true');
+  });
+  await page.reload();
+  await expect(editorPane).toHaveAttribute('data-state', 'collapsed');
+
+  await editorPane.click();
+  await expect(editorPane).toHaveAttribute('data-state', 'open');
+  expect(await editorPane.evaluate((el) => el.offsetWidth)).toBe(420);
+});
+
+test('saves the editor width after dragging the handle', async ({ page }) => {
+  const handle = page.locator('#resizeHandle');
+  const box = await handle.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(handle).toHaveAttribute('data-state', 'dragging');
+  await page.mouse.move(box.x + box.width / 2 - 100, box.y + box.height / 2, { steps: 4 });
+  await page.mouse.up();
+  await expect(handle).toHaveAttribute('data-state', 'idle');
+
+  const width = await page.locator('#editorPane').evaluate((el) => el.offsetWidth);
+  expect(await page.evaluate(() => localStorage.getItem('md-preview-editor-width'))).toBe(
+    String(width)
+  );
+  expect(await page.evaluate(() => document.body.style.cursor)).toBe('');
+});
+
+test('shows a pasted whole document for reading, but not a pasted snippet', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  const editor = page.locator('#editor');
+  const editorPane = page.locator('#editorPane');
+  const paste = async (text) => {
+    await page.evaluate((value) => navigator.clipboard.writeText(value), text);
+    await page.keyboard.press('ControlOrMeta+v');
+  };
+
+  await editor.click();
+  await editor.evaluate((el) => el.setSelectionRange(el.value.length, el.value.length));
+  await paste(' snippet');
+  await expect(editor).toHaveValue(/ snippet$/);
+  await expect(editorPane).toHaveAttribute('data-state', 'open');
+
+  await editor.press('ControlOrMeta+a');
+  await paste('# Pasted document\n');
+  await expect(editor).toHaveValue('# Pasted document\n');
+  await expect(editorPane).toHaveAttribute('data-state', 'collapsed');
+});
+
+test('scroll sync follows the editor to where it stops', async ({ page }) => {
+  const preview = page.locator('#preview');
+  await page.locator('#scrollSyncToggle').click();
+  await expect(page.locator('#scrollSyncToggle')).toHaveAttribute('data-state', 'idle');
+
+  // Two scrolls closer together than the sync interval: the second is where the editor stops.
+  await page.locator('#editor').evaluate((el) => {
+    el.scrollTop = (el.scrollHeight - el.clientHeight) * 0.1;
+    el.dispatchEvent(new Event('scroll'));
+    el.scrollTop = el.scrollHeight;
+    el.dispatchEvent(new Event('scroll'));
+  });
+  await expect
+    .poll(() => preview.evaluate((el) => el.scrollHeight - el.clientHeight - el.scrollTop))
+    .toBeLessThan(2);
+});
+
 test('replaces the welcome document without asking', async ({ browser }) => {
   const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
 

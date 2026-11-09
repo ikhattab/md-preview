@@ -22,13 +22,10 @@ import { loadTheme, toggleTheme } from './lib/theme.js';
 import {
   bindResizeListeners,
   handleViewportResize,
-  initMobileView,
+  initLayout,
   isMobile,
-  loadCollapseState,
-  loadEditorWidth,
-  loadScrollSyncPreference,
   setMobileView,
-  switchToPreviewAfterPaste,
+  prepareForPaste,
   throttledSyncEditorToPreview,
   throttledSyncPreviewToEditor,
   toggleCollapse,
@@ -84,11 +81,12 @@ function setupEventListeners() {
   });
 
   editor.addEventListener('paste', () => {
+    const afterPaste = prepareForPaste();
     setTimeout(() => {
       refreshGutter();
       debouncedSave();
       debouncedLint(editor.value);
-      switchToPreviewAfterPaste();
+      afterPaste();
     }, 0);
   });
 
@@ -166,9 +164,7 @@ function init() {
   initTooltips();
   configureMarked();
   loadTheme();
-  loadCollapseState();
-  loadEditorWidth();
-  loadScrollSyncPreference();
+  initLayout();
   loadLintPreference();
   loadRemoteImagePreference();
   loadContent();
@@ -176,7 +172,6 @@ function init() {
   resetPaneScrollPositions();
   normalizeEditorPosition();
   setupEventListeners();
-  initMobileView();
   initOutline();
   runInitialLint();
   registerServiceWorker();
