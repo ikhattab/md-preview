@@ -538,6 +538,83 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
+test('retries loading highlighting after a language fails to load', async ({ browser }) => {
+  // Blocked so the requests reach page.route instead of the service worker.
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  let failedOnce = false;
+  await page.route('**/chunks/python.*.js', (route) => {
+    if (failedOnce) return route.continue();
+    failedOnce = true;
+    return route.abort();
+  });
+  // The failed load is reported as an unhandled rejection; this test is about what happens next.
+  page.on('pageerror', () => {});
+
+  await page.goto('/');
+  await expect.poll(() => failedOnce).toBe(true);
+  await page.locator('#editor').fill('# Retry\n\n```python\ndef retry():\n    pass\n```\n');
+
+  await expect(page.locator('#preview pre code.language-python .hljs-keyword').first()).toHaveText(
+    'def'
+  );
+  await expect(page.locator('link#hljs-theme-light')).toHaveCount(1);
+  await context.close();
+});
+
+test('renders each diagram once while the reader keeps typing', async ({ browser }) => {
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  await page.goto('/');
+  await expect(page.locator('#preview .mermaid.mermaid-rendered > svg')).toHaveCount(1);
+
+  // Slow down the sequence diagram code, which loads on first use, so typing happens while the
+  // diagrams below are still rendering.
+  await page.route('**/chunks/*.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
+  await page.evaluate(() => {
+    window.__diagramRenders = 0;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        if (!record.target.classList?.contains('mermaid')) continue;
+        for (const node of record.addedNodes) {
+          if (node.nodeName === 'svg') window.__diagramRenders++;
+        }
+      }
+    }).observe(document.getElementById('preview'), { childList: true, subtree: true });
+  });
+
+  const count = 6;
+  const diagrams = Array.from(
+    { length: count },
+    (_, i) => `\`\`\`mermaid\nsequenceDiagram\n  Alice->>Bob: Hello ${i}\n\`\`\`\n`
+  ).join('\n');
+  const editor = page.locator('#editor');
+  await editor.fill(`# Diagrams\n\n${diagrams}\nNotes`);
+  await editor.press('ControlOrMeta+End');
+  await editor.pressSequentially(' and more');
+
+  await expect(page.locator('#preview .mermaid.mermaid-rendered > svg')).toHaveCount(count);
+  // A diagram rendered twice is redrawn after the count above is reached, so give any such
+  // render time to land before counting.
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__diagramRenders)).toBe(count);
+  await context.close();
+});
+
+test('exports when Enter is pressed in the filename field', async ({ page }) => {
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await page.locator('#exportFilename').fill('from-enter');
+
+  const downloadPromise = page.waitForEvent('download', { timeout: 5000 });
+  await page.locator('#exportFilename').press('Enter');
+  expect((await downloadPromise).suggestedFilename()).toBe('from-enter.html');
+  await expect(page.locator('#exportDialog')).toBeHidden();
+});
+
 test('serves the production Content Security Policy and fails on violations', async ({ page }) => {
   const response = await page.request.get('/');
   expect(response.headers()['content-security-policy']).toContain("default-src 'self'");
@@ -788,6 +865,66 @@ test('prints a PDF export in the chosen theme and restores the live theme', asyn
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect.poll(() => readMermaidNodeFill(preview)).toBe(darkFill);
   await expect(page).toHaveTitle(appTitle);
+});
+
+test('cancels an export in progress and leaves the dialog ready for the next one', async ({
+  page,
+}) => {
+  const html = page.locator('html');
+  const dialog = page.locator('#exportDialog');
+  const downloadBtn = page.locator('#exportDownloadBtn');
+  const downloads = [];
+  page.on('download', (download) => downloads.push(download));
+
+  // Hold the export's fetch of the image, so the export stays in progress until released.
+  let releaseExportFetch;
+  const exportFetchHeld = new Promise((resolve) => {
+    page.route('https://images.example/**', async (route) => {
+      if (route.request().resourceType() === 'fetch' && !releaseExportFetch) {
+        await new Promise((release) => {
+          releaseExportFetch = release;
+          resolve();
+        });
+      }
+      await route.fulfill({ contentType: 'image/png', body: png });
+    });
+  });
+
+  await page.locator('#editor').fill('# Slow\n\n![slow](https://images.example/slow.png)\n');
+  await expect(page.locator('#preview img[alt="slow"]')).toBeVisible();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await page.locator('#exportTheme').selectOption('dark');
+  await downloadBtn.click();
+  await exportFetchHeld;
+  await expect(downloadBtn).toHaveText('Exporting…');
+  await expect(downloadBtn).toBeDisabled();
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+
+  // Cancelling puts the live theme back right away, without waiting for the export.
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportPdfBtn').click();
+  await expect(downloadBtn).toBeEnabled();
+  await expect(downloadBtn).toHaveText('Print / Save PDF');
+  await page.locator('#exportCancelBtn').click();
+  await expect(dialog).toBeHidden();
+
+  // Once released, the cancelled export ends without downloading or touching the dialog.
+  releaseExportFetch();
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  const downloadPromise = page.waitForEvent('download');
+  await downloadBtn.click();
+  await downloadPromise;
+  await expect(page.locator('#mdToast')).toHaveText('Exported HTML');
+  await expect(dialog).toBeHidden();
+  expect(downloads).toHaveLength(1);
 });
 
 test('embeds remote images in HTML export and reports the ones it could not', async ({ page }) => {
@@ -1071,6 +1208,48 @@ test('replaces the welcome document without asking', async ({ browser }) => {
   await page.context().close();
 });
 
+test("doesn't save the untouched welcome guide, so a later visit gets the current one", async ({
+  browser,
+}) => {
+  const page = await (await browser.newContext()).newPage();
+  const editor = page.locator('#editor');
+  const savedContent = () => page.evaluate(() => localStorage.getItem('md-preview-content'));
+
+  await page.goto('/');
+  await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+  await page.reload();
+  await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+  expect(await savedContent()).toBeNull();
+
+  await editor.press('End');
+  await editor.pressSequentially(' edited');
+  await expect.poll(savedContent).toContain(' edited');
+  await page.context().close();
+});
+
+test('follows the system theme until the reader picks one', async ({ browser }) => {
+  const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
+  const html = page.locator('html');
+  const savedTheme = () => page.evaluate(() => localStorage.getItem('md-preview-theme'));
+
+  await page.goto('/');
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  expect(await savedTheme()).toBeNull();
+
+  await page.locator('#themeToggle').click();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  expect(await savedTheme()).toBe('light');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveAttribute('data-theme', 'light');
+  await page.context().close();
+});
+
 test('serves the welcome guide in the HTML, replaced by saved content once the app runs', async ({
   page,
   browser,
@@ -1112,7 +1291,7 @@ test("reopens the welcome guide, with Undo when it replaced the reader's work", 
   await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
   await expect(undo).toBeHidden();
 
-  // The guide is saved like any document, and importing over it still doesn't ask.
+  // The guide comes back after a reload, and importing over it still doesn't ask.
   await page.reload();
   await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
   await page.locator('#importFileInput').setInputFiles({

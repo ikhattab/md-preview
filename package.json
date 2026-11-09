@@ -12,8 +12,10 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run format:check",
-    "test:e2e": "playwright test"
+    "check": "npm run lint && npm run format:check && npm run test:unit && npm run docs:machines -- --check",
+    "test:e2e": "playwright test",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "docs:machines": "node scripts/state-machines.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
