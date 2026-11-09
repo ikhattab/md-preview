@@ -12,6 +12,7 @@ import {
   resizeMachine,
   scrollSyncMachine,
 } from '../../lib/machines/layout.js';
+import { dropOverlayMachine, tooltipMachine } from '../../lib/machines/overlays.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -233,4 +234,30 @@ test('scroll sync: the leading pane ignores the echo from the other one until it
     'TOGGLE',
   ]);
   assert.deepEqual(values, ['off', 'idle', 'editor', 'editor', 'editor', 'idle', 'preview', 'off']);
+});
+
+test('drop overlay: ignores page drags and drags while a dialog is open', () => {
+  assert.deepEqual(
+    run(dropOverlayMachine, [
+      'INTERNAL_DRAG_START',
+      { type: 'DRAG_ENTER', allowed: true },
+      'INTERNAL_DRAG_END',
+      { type: 'DRAG_ENTER', allowed: true, blocked: true },
+      { type: 'DRAG_ENTER', allowed: false },
+      'DROP',
+    ]).values,
+    ['internal', 'internal', 'idle', 'idle', 'over', 'idle']
+  );
+});
+
+test('tooltip: leaving another element keeps it, and removal hides it', () => {
+  const a = { id: 'a' };
+  const b = { id: 'b' };
+  const { values } = run(tooltipMachine, [
+    { type: 'SHOW', anchor: a },
+    { type: 'SHOW', anchor: b },
+    { type: 'LEAVE', anchor: a },
+    'ANCHOR_REMOVED',
+  ]);
+  assert.deepEqual(values, ['shown', 'shown', 'shown', 'hidden']);
 });
