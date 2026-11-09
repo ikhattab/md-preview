@@ -143,17 +143,19 @@ npm run preview  # serves ./dist at http://localhost:3000 with the headers from 
 
 ## Scripts
 
-| Command                | Description                                          |
-| ---------------------- | ---------------------------------------------------- |
-| `npm run dev`          | Vite dev server with hot reload                      |
-| `npm run build`        | Production build to `dist/`                          |
-| `npm run preview`      | Serve the production build on port 3000              |
-| `npm run lint`         | Run ESLint                                           |
-| `npm run lint:fix`     | Run ESLint with autofix                              |
-| `npm run format`       | Format all files with Prettier                       |
-| `npm run format:check` | Check formatting with Prettier                       |
-| `npm run check`        | Lint and format check (CI runs this, then the build) |
-| `npm run test:e2e`     | Playwright smoke tests against the production build  |
+| Command                 | Description                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`           | Vite dev server with hot reload                                                                                    |
+| `npm run build`         | Production build to `dist/`                                                                                        |
+| `npm run preview`       | Serve the production build on port 3000                                                                            |
+| `npm run lint`          | Run ESLint                                                                                                         |
+| `npm run lint:fix`      | Run ESLint with autofix                                                                                            |
+| `npm run format`        | Format all files with Prettier                                                                                     |
+| `npm run format:check`  | Check formatting with Prettier                                                                                     |
+| `npm run check`         | Lint, format check, unit tests, and a check that the state machine docs are current (CI runs this, then the build) |
+| `npm run test:e2e`      | Playwright smoke tests against the production build                                                                |
+| `npm run test:unit`     | Unit tests for the state machines (Node's test runner)                                                             |
+| `npm run docs:machines` | Regenerate `docs/state-machines.md` from `lib/machines/`                                                           |
 
 ## Deployment
 
@@ -168,44 +170,51 @@ The output is a plain static site, so any static host works (Netlify, S3, nginx,
 
 Plain HTML, CSS, and ES modules, bundled and code-split by [Vite](https://vite.dev/). Markdown is parsed by [marked](https://marked.js.org/) with `marked-highlight` and `marked-katex-extension`; icons come from [Lucide](https://lucide.dev/), and fonts are self-hosted via [Fontsource](https://fontsource.org/).
 
+Every piece of state that changes over time, from the export dialog to the toast and the editor layout, is a finite state machine: a pure definition in `lib/machines/` run by a small helper in `lib/machine.js`. [docs/state-machines.md](docs/state-machines.md), generated from the definitions, diagrams each one.
+
 <details>
 <summary>Project structure</summary>
 
-| Path                            | Purpose                                                  |
-| ------------------------------- | -------------------------------------------------------- |
-| `index.html`                    | Layout and entry point                                   |
-| `app.js`                        | Initialization and event wiring                          |
-| `styles.css`                    | Theming, layout, and responsive styles                   |
-| `lib/constants.js`              | Shared constants and the starter document                |
-| `lib/dom.js`                    | DOM element references                                   |
-| `lib/storage.js`                | `localStorage` helpers                                   |
-| `lib/utils.js`                  | Debounce, throttle, and string helpers                   |
-| `lib/preview.js`                | Markdown parsing, sanitization, Mermaid, preview updates |
-| `lib/preview-blocks.js`         | Updates only the preview blocks that changed             |
-| `lib/frontmatter.js`            | YAML frontmatter detection and metadata table            |
-| `lib/gutter.js`                 | Line-number gutter                                       |
-| `lib/lint.js`                   | Lint rules and panel UI                                  |
-| `lib/theme.js`                  | Theme loading and toggling                               |
-| `lib/layout.js`                 | Resize, collapse, mobile view, scroll sync               |
-| `lib/header-menu.js`            | Mobile overflow menu for the header controls             |
-| `lib/content.js`                | Auto-save and content loading                            |
-| `lib/import-export.js`          | Import and Markdown/HTML/PDF export                      |
-| `lib/file-launch.js`            | Opens files the OS launches the installed app with       |
-| `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid        |
-| `lib/offline.js`                | Service worker registration and the update prompt        |
-| `lib/outline.js`                | Document outline side panel                              |
-| `lib/media-viewer.js`           | Fullscreen image and diagram viewer                      |
-| `lib/remote-images.js`          | Remote image blocking and placeholders                   |
-| `lib/icons.js`                  | Lucide icon helpers                                      |
-| `lib/tooltip.js`                | Viewport-aware tooltips                                  |
-| `lib/fonts.js`                  | Self-hosted font imports                                 |
-| `sw.js`                         | Service worker for offline use                           |
-| `vite.config.js`                | Build configuration                                      |
-| `scripts/cloudflare-headers.js` | Applies `_headers` in `vite preview`                     |
-| `scripts/service-worker.js`     | Emits `sw.js` with the build's file lists                |
-| `scripts/og-image.html`         | Source page for the social preview image                 |
-| `_headers`                      | Cache and security headers for static hosting            |
-| `site.webmanifest`              | Web app manifest                                         |
+| Path                            | Purpose                                                    |
+| ------------------------------- | ---------------------------------------------------------- |
+| `index.html`                    | Layout and entry point                                     |
+| `app.js`                        | Initialization and event wiring                            |
+| `styles.css`                    | Theming, layout, and responsive styles                     |
+| `lib/constants.js`              | Shared constants and the starter document                  |
+| `lib/dom.js`                    | DOM element references                                     |
+| `lib/storage.js`                | `localStorage` helpers                                     |
+| `lib/utils.js`                  | Debounce, throttle, and string helpers                     |
+| `lib/machine.js`                | Runs state machines and shows their state in `data-state`  |
+| `lib/machines/`                 | State machine definitions, one per piece of changing state |
+| `lib/preview.js`                | Markdown parsing, sanitization, Mermaid, preview updates   |
+| `lib/preview-blocks.js`         | Updates only the preview blocks that changed               |
+| `lib/frontmatter.js`            | YAML frontmatter detection and metadata table              |
+| `lib/gutter.js`                 | Line-number gutter                                         |
+| `lib/lint.js`                   | Lint rules and panel UI                                    |
+| `lib/theme.js`                  | Theme loading and toggling                                 |
+| `lib/layout.js`                 | Resize, collapse, mobile view, scroll sync                 |
+| `lib/header-menu.js`            | Mobile overflow menu for the header controls               |
+| `lib/content.js`                | Auto-save and content loading                              |
+| `lib/import-export.js`          | Import and Markdown/HTML/PDF export                        |
+| `lib/file-launch.js`            | Opens files the OS launches the installed app with         |
+| `lib/lazy-vendors.js`           | Lazy loading for highlight.js, KaTeX, and Mermaid          |
+| `lib/offline.js`                | Service worker registration and the update prompt          |
+| `lib/outline.js`                | Document outline side panel                                |
+| `lib/media-viewer.js`           | Fullscreen image and diagram viewer                        |
+| `lib/remote-images.js`          | Remote image blocking and placeholders                     |
+| `lib/icons.js`                  | Lucide icon helpers                                        |
+| `lib/tooltip.js`                | Viewport-aware tooltips                                    |
+| `lib/fonts.js`                  | Self-hosted font imports                                   |
+| `sw.js`                         | Service worker for offline use                             |
+| `vite.config.js`                | Build configuration                                        |
+| `scripts/cloudflare-headers.js` | Applies `_headers` in `vite preview`                       |
+| `scripts/service-worker.js`     | Emits `sw.js` with the build's file lists                  |
+| `scripts/og-image.html`         | Source page for the social preview image                   |
+| `scripts/state-machines.js`     | Generates `docs/state-machines.md`                         |
+| `tests/unit/`                   | Unit tests for the state machine definitions               |
+| `tests/e2e/`                    | Playwright tests against the production build              |
+| `_headers`                      | Cache and security headers for static hosting              |
+| `site.webmanifest`              | Web app manifest                                           |
 
 </details>
 
