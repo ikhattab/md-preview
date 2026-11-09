@@ -11,6 +11,55 @@ development, `window.__machines` holds every running machine.
 
 Arrows show `EVENT [guard]`. An arrow back to the same state changes only the context.
 
+## document
+
+What the editor holds: the untouched welcome guide, nothing, a draft, or an imported file, whose name exports reuse. Clearing the editor forgets the file's name. The untouched guide isn't saved, so the next visit shows the current one.
+
+- Defined in [`lib/machines/document.js`](../lib/machines/document.js)
+- State shown on `#editor`
+- Context: `filename`
+
+```mermaid
+stateDiagram-v2
+  [*] --> welcome
+  welcome --> welcome: EDITED [isGuide]
+  welcome --> empty: EDITED [isBlank]
+  welcome --> draft: EDITED
+  welcome --> file: IMPORTED
+  welcome --> welcome: OPENED_GUIDE
+  welcome --> welcome: RESTORED [guarded]
+  welcome --> empty: RESTORED [guarded]
+  welcome --> draft: RESTORED [guarded]
+  welcome --> file: RESTORED [guarded]
+  empty --> welcome: EDITED [isGuide]
+  empty --> empty: EDITED [isBlank]
+  empty --> draft: EDITED
+  empty --> file: IMPORTED
+  empty --> welcome: OPENED_GUIDE
+  empty --> welcome: RESTORED [guarded]
+  empty --> empty: RESTORED [guarded]
+  empty --> draft: RESTORED [guarded]
+  empty --> file: RESTORED [guarded]
+  draft --> welcome: EDITED [isGuide]
+  draft --> empty: EDITED [isBlank]
+  draft --> draft: EDITED
+  draft --> file: IMPORTED
+  draft --> welcome: OPENED_GUIDE
+  draft --> welcome: RESTORED [guarded]
+  draft --> empty: RESTORED [guarded]
+  draft --> draft: RESTORED [guarded]
+  draft --> file: RESTORED [guarded]
+  file --> welcome: EDITED [isGuide]
+  file --> empty: EDITED [isBlank]
+  file --> file: EDITED
+  file --> file: IMPORTED
+  file --> welcome: OPENED_GUIDE
+  file --> welcome: RESTORED [guarded]
+  file --> empty: RESTORED [guarded]
+  file --> draft: RESTORED [guarded]
+  file --> file: RESTORED [guarded]
+```
+
 ## exportDialog
 
 The HTML and PDF export dialog, from choosing options until the file downloads or the print dialog closes. The page shows the export theme while an export runs.
@@ -32,6 +81,27 @@ stateDiagram-v2
   printing --> closed: DONE [isCurrentRun]
   printing --> closed: FAILED [isCurrentRun]
   printing --> open: OPEN
+```
+
+## import
+
+Opening a file from the Import button, a drop, or the operating system. Replacing the reader's own work asks first; the latest file wins when several arrive close together.
+
+- Defined in [`lib/machines/import.js`](../lib/machines/import.js)
+- State shown on `#importConfirmDialog`
+- Context: `run`, `filename`, `text`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> reading: FILE
+  reading --> reading: FILE
+  reading --> confirming: READ [guarded]
+  reading --> idle: READ [isCurrentRun]
+  reading --> idle: FAILED [isCurrentRun]
+  confirming --> reading: FILE
+  confirming --> idle: CONFIRM
+  confirming --> idle: CANCEL
 ```
 
 ## theme

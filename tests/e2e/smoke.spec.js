@@ -1197,6 +1197,35 @@ test('brings an Undo back after a newer toast covers it', async ({ page }) => {
   await expect(toast).toHaveText('Your document is back');
 });
 
+test('forgets an imported file’s name once the editor is cleared', async ({ page }) => {
+  const editor = page.locator('#editor');
+  const filename = page.locator('#exportFilename');
+  const openHtmlExport = async () => {
+    await page.locator('#exportMenuBtn').click();
+    await page.locator('#exportHtmlBtn').click();
+  };
+
+  await page.locator('#importFileInput').setInputFiles({
+    name: 'Meeting Notes.markdown',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# Agenda\n'),
+  });
+  await page.locator('#importConfirmReplaceBtn').click();
+  await expect(editor).toHaveValue('# Agenda\n');
+  await expect(editor).toHaveAttribute('data-state', 'file');
+  await openHtmlExport();
+  await expect(filename).toHaveValue('meeting-notes');
+  await page.locator('#exportCancelBtn').click();
+
+  // Importing showed the file for reading, so open the editor again.
+  await page.locator('#editorPane').click();
+  await editor.fill('');
+  await editor.fill('# Fresh start\n');
+  await expect(editor).toHaveAttribute('data-state', 'draft');
+  await openHtmlExport();
+  await expect(filename).toHaveValue('fresh-start');
+});
+
 test('replaces the welcome document without asking', async ({ browser }) => {
   const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
 
