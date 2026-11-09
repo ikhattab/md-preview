@@ -11,6 +11,26 @@ development, `window.__machines` holds every running machine.
 
 Arrows show `EVENT [guard]`. An arrow back to the same state changes only the context.
 
+## appUpdate
+
+Keeping the installed app up to date through the service worker. A new version waits until the reader chooses Reload, so a deploy never swaps code under someone mid-edit. If another tab switches to the new version first, this page runs the old one, whose files the new version no longer keeps offline, so it offers a reload too.
+
+- Defined in [`lib/machines/app-update.js`](../lib/machines/app-update.js)
+
+```mermaid
+stateDiagram-v2
+  [*] --> unregistered
+  unregistered --> current: REGISTERED [guarded]
+  unregistered --> installing: REGISTERED
+  installing --> current: CONTROLLER_CHANGED
+  current --> updateReady: UPDATE_READY
+  current --> outdated: CONTROLLER_CHANGED
+  updateReady --> reloading: RELOAD
+  updateReady --> outdated: CONTROLLER_CHANGED
+  outdated --> reloading: RELOAD
+  reloading --> reloading: CONTROLLER_CHANGED
+```
+
 ## diagram
 
 One Mermaid diagram in the preview. A diagram is rendered once, however many preview updates happen meanwhile. One that may load remote images while blocking is on is replaced by a placeholder, and export retries one that failed.
