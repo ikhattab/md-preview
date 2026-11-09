@@ -16,7 +16,7 @@ npm run dev
 Before opening a pull request, run:
 
 ```bash
-npm run check      # ESLint + Prettier
+npm run check      # ESLint, Prettier, unit tests, state machine docs
 npm run build      # production build
 npm run test:e2e   # Playwright smoke tests against the production build
 ```
@@ -32,6 +32,7 @@ The e2e tests serve `dist/` with the headers from [`_headers`](_headers), includ
 - **Keep startup fast.** Heavy dependencies (highlight.js, KaTeX, Mermaid) are lazy-loaded in `lib/lazy-vendors.js`; new heavy features should be too.
 - **Sanitize rendered output.** Anything that turns markdown into HTML must go through DOMPurify.
 - **Test both themes** and a narrow mobile viewport for UI changes.
+- **State changes through machines.** Anything that changes over time (a dialog, a toggle, a load, a drag) is a state machine. Define it in `lib/machines/` as pure data, run it with `createMachine` from `lib/machine.js` in the module that owns the feature, do side effects in its listener, and show its state with `reflectState`. Add a case to `tests/unit/machines.test.js` and run `npm run docs:machines`. [docs/state-machines.md](docs/state-machines.md) shows every machine.
 
 ## Pull requests
 
