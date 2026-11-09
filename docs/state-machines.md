@@ -11,6 +11,24 @@ development, `window.__machines` holds every running machine.
 
 Arrows show `EVENT [guard]`. An arrow back to the same state changes only the context.
 
+## diagram
+
+One Mermaid diagram in the preview. A diagram is rendered once, however many preview updates happen meanwhile. One that may load remote images while blocking is on is replaced by a placeholder, and export retries one that failed.
+
+- Defined in [`lib/machines/preview.js`](../lib/machines/preview.js)
+- State shown on `.mermaid (each diagram)`
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> rendering: RENDER
+  pending --> blocked: BLOCK
+  rendering --> rendered: RENDERED
+  rendering --> failed: FAILED
+  rendering --> blocked: BLOCK
+  failed --> pending: RETRY
+```
+
 ## document
 
 What the editor holds: the untouched welcome guide, nothing, a draft, or an imported file, whose name exports reuse. Clearing the editor forgets the file's name. The untouched guide isn't saved, so the next visit shows the current one.
@@ -236,6 +254,21 @@ stateDiagram-v2
   open --> open: HEADINGS
 ```
 
+## previewRender
+
+Rendering the preview at most once per animation frame. A forced render, needed when something other than the markdown changed, isn't lost when it joins one already waiting.
+
+- Defined in [`lib/machines/preview.js`](../lib/machines/preview.js)
+- Context: `force`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> scheduled: SCHEDULE
+  scheduled --> scheduled: SCHEDULE
+  scheduled --> idle: FRAME
+```
+
 ## remoteImages
 
 Whether the preview blocks images from other sites until the reader chooses to load them (saved). Turning it on or off, or opening another document, forgets which images were let through.
@@ -351,4 +384,18 @@ stateDiagram-v2
   shown --> shown: SHOW
   shown --> hidden: LEAVE [forAnchor]
   shown --> hidden: ANCHOR_REMOVED
+```
+
+## vendorLoader
+
+Loading a heavy library the first time the preview needs it: highlight.js for code, KaTeX for math, Pele for diagrams. It counts as loaded only once all of it is, and it's tried again after a failure. In development these run as hljsLoader, katexLoader, and mermaidLoader.
+
+- Defined in [`lib/machines/vendor-loader.js`](../lib/machines/vendor-loader.js)
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> loading: LOAD
+  loading --> ready: LOADED
+  loading --> idle: FAILED
 ```
