@@ -1071,6 +1071,25 @@ test('replaces the welcome document without asking', async ({ browser }) => {
   await page.context().close();
 });
 
+test("doesn't save the untouched welcome guide, so a later visit gets the current one", async ({
+  browser,
+}) => {
+  const page = await (await browser.newContext()).newPage();
+  const editor = page.locator('#editor');
+  const savedContent = () => page.evaluate(() => localStorage.getItem('md-preview-content'));
+
+  await page.goto('/');
+  await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+  await page.reload();
+  await expect(page.locator('#preview h1')).toHaveText(/^Welcome to mdfor\.dev/);
+  expect(await savedContent()).toBeNull();
+
+  await editor.press('End');
+  await editor.pressSequentially(' edited');
+  await expect.poll(savedContent).toContain(' edited');
+  await page.context().close();
+});
+
 test('follows the system theme until the reader picks one', async ({ browser }) => {
   const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
   const html = page.locator('html');
@@ -1135,7 +1154,7 @@ test("reopens the welcome guide, with Undo when it replaced the reader's work", 
   await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
   await expect(undo).toBeHidden();
 
-  // The guide is saved like any document, and importing over it still doesn't ask.
+  // The guide comes back after a reload, and importing over it still doesn't ask.
   await page.reload();
   await expect(welcome).toHaveText(/^Welcome to mdfor\.dev/);
   await page.locator('#importFileInput').setInputFiles({
