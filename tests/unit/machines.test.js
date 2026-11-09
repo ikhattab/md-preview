@@ -15,6 +15,8 @@ import {
 import { dropOverlayMachine, tooltipMachine } from '../../lib/machines/overlays.js';
 import { isOutlineShown, outlineMachine } from '../../lib/machines/outline.js';
 import { lintMachine } from '../../lib/machines/lint.js';
+import { diagramMachine, previewRenderMachine } from '../../lib/machines/preview.js';
+import { vendorLoaderMachine } from '../../lib/machines/vendor-loader.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -284,4 +286,40 @@ test('lint: results only count while on, and turning off clears them', () => {
   assert.deepEqual(machine.context.warnings, warnings);
   machine.send('TOGGLE');
   assert.deepEqual(machine.context.warnings, []);
+});
+
+test('preview render: a forced render joining a waiting one stays forced', () => {
+  const machine = createMachine(previewRenderMachine);
+  machine.send({ type: 'SCHEDULE', force: false });
+  machine.send({ type: 'SCHEDULE', force: true });
+  machine.send({ type: 'SCHEDULE', force: false });
+  assert.deepEqual(machine.state, { value: 'scheduled', context: { force: true } });
+  machine.send('FRAME');
+  assert.deepEqual(machine.state, { value: 'idle', context: { force: false } });
+});
+
+test('diagram: renders once, and only a failed one is retried', () => {
+  const { values } = run(diagramMachine, [
+    'RENDER',
+    'RENDER',
+    'FAILED',
+    'RETRY',
+    'RENDER',
+    'RENDERED',
+    'RETRY',
+  ]);
+  assert.deepEqual(values, [
+    'rendering',
+    'rendering',
+    'failed',
+    'pending',
+    'rendering',
+    'rendered',
+    'rendered',
+  ]);
+});
+
+test('vendor loader: loads once, and tries again after a failure', () => {
+  const { values } = run(vendorLoaderMachine, ['LOAD', 'LOAD', 'FAILED', 'LOAD', 'LOADED', 'LOAD']);
+  assert.deepEqual(values, ['loading', 'loading', 'idle', 'loading', 'ready', 'ready']);
 });
