@@ -538,6 +538,30 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
+test('retries loading highlighting after a language fails to load', async ({ browser }) => {
+  // Blocked so the requests reach page.route instead of the service worker.
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  let failedOnce = false;
+  await page.route('**/chunks/python.*.js', (route) => {
+    if (failedOnce) return route.continue();
+    failedOnce = true;
+    return route.abort();
+  });
+  // The failed load is reported as an unhandled rejection; this test is about what happens next.
+  page.on('pageerror', () => {});
+
+  await page.goto('/');
+  await expect.poll(() => failedOnce).toBe(true);
+  await page.locator('#editor').fill('# Retry\n\n```python\ndef retry():\n    pass\n```\n');
+
+  await expect(page.locator('#preview pre code.language-python .hljs-keyword').first()).toHaveText(
+    'def'
+  );
+  await expect(page.locator('link#hljs-theme-light')).toHaveCount(1);
+  await context.close();
+});
+
 test('renders each diagram once while the reader keeps typing', async ({ browser }) => {
   const context = await browser.newContext({ serviceWorkers: 'block' });
   const page = await context.newPage();
