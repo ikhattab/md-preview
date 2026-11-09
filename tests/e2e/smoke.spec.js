@@ -538,6 +538,48 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
+test('renders each diagram once while the reader keeps typing', async ({ browser }) => {
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  const page = await context.newPage();
+  await page.goto('/');
+  await expect(page.locator('#preview .mermaid.mermaid-rendered > svg')).toHaveCount(1);
+
+  // Slow down the sequence diagram code, which loads on first use, so typing happens while the
+  // diagrams below are still rendering.
+  await page.route('**/chunks/*.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
+  await page.evaluate(() => {
+    window.__diagramRenders = 0;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        if (!record.target.classList?.contains('mermaid')) continue;
+        for (const node of record.addedNodes) {
+          if (node.nodeName === 'svg') window.__diagramRenders++;
+        }
+      }
+    }).observe(document.getElementById('preview'), { childList: true, subtree: true });
+  });
+
+  const count = 6;
+  const diagrams = Array.from(
+    { length: count },
+    (_, i) => `\`\`\`mermaid\nsequenceDiagram\n  Alice->>Bob: Hello ${i}\n\`\`\`\n`
+  ).join('\n');
+  const editor = page.locator('#editor');
+  await editor.fill(`# Diagrams\n\n${diagrams}\nNotes`);
+  await editor.press('ControlOrMeta+End');
+  await editor.pressSequentially(' and more');
+
+  await expect(page.locator('#preview .mermaid.mermaid-rendered > svg')).toHaveCount(count);
+  // A diagram rendered twice is redrawn after the count above is reached, so give any such
+  // render time to land before counting.
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__diagramRenders)).toBe(count);
+  await context.close();
+});
+
 test('exports when Enter is pressed in the filename field', async ({ page }) => {
   await page.locator('#exportMenuBtn').click();
   await page.locator('#exportHtmlBtn').click();
