@@ -6,6 +6,12 @@ import { readerTheme, shownTheme, themeMachine } from '../../lib/machines/theme.
 import { toastMachine } from '../../lib/machines/toast.js';
 import { documentMachine, isOwnWork } from '../../lib/machines/document.js';
 import { importMachine } from '../../lib/machines/import.js';
+import {
+  editorPaneMachine,
+  mobileViewMachine,
+  resizeMachine,
+  scrollSyncMachine,
+} from '../../lib/machines/layout.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -171,4 +177,60 @@ test('import: a cancelled confirmation drops the file', () => {
   ]);
   assert.deepEqual(values, ['reading', 'confirming', 'idle']);
   assert.equal(machine.context.text, null);
+});
+
+test('editor pane: reopening after a collapse for reading stops later ones', () => {
+  const { machine, values } = run(editorPaneMachine, [
+    { type: 'SHOW_FOR_READING' },
+    { type: 'TOGGLE' },
+    { type: 'SHOW_FOR_READING' },
+  ]);
+  assert.deepEqual(values, ['collapsed', 'open', 'open']);
+  assert.equal(machine.context.autoCollapse, false);
+});
+
+test('editor pane: undo reopens only an editor that reading collapsed', () => {
+  assert.deepEqual(run(editorPaneMachine, ['SHOW_FOR_READING', 'RESTORE']).values, [
+    'collapsed',
+    'open',
+  ]);
+  assert.deepEqual(run(editorPaneMachine, ['TOGGLE', 'RESTORE']).values, [
+    'collapsed',
+    'collapsed',
+  ]);
+});
+
+test('mobile view: switches between the editor and the preview', () => {
+  assert.deepEqual(run(mobileViewMachine, ['SHOW_PREVIEW', 'SHOW_PREVIEW', 'SHOW_EDITOR']).values, [
+    'preview',
+    'preview',
+    'editor',
+  ]);
+});
+
+test('resize: a drag stays within limits, and a cancelled one puts the width back', () => {
+  const limits = { minWidth: 200, maxWidth: 900 };
+  const { machine } = run(resizeMachine, [
+    { type: 'START', x: 500, width: 500 },
+    { type: 'MOVE', x: 100, ...limits },
+  ]);
+  assert.equal(machine.context.width, 200);
+  machine.send({ type: 'MOVE', x: 2000, ...limits });
+  assert.equal(machine.context.width, 900);
+  machine.send('CANCEL');
+  assert.deepEqual([machine.value, machine.context.width], ['idle', 500]);
+});
+
+test('scroll sync: the leading pane ignores the echo from the other one until it settles', () => {
+  const { values } = run(scrollSyncMachine, [
+    { type: 'SCROLLED', pane: 'editor' },
+    'TOGGLE',
+    { type: 'SCROLLED', pane: 'editor' },
+    { type: 'SCROLLED', pane: 'preview' },
+    { type: 'SCROLLED', pane: 'editor' },
+    'SETTLED',
+    { type: 'SCROLLED', pane: 'preview' },
+    'TOGGLE',
+  ]);
+  assert.deepEqual(values, ['off', 'idle', 'editor', 'editor', 'editor', 'idle', 'preview', 'off']);
 });
