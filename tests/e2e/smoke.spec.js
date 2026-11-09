@@ -538,6 +538,17 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
+test('exports when Enter is pressed in the filename field', async ({ page }) => {
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await page.locator('#exportFilename').fill('from-enter');
+
+  const downloadPromise = page.waitForEvent('download', { timeout: 5000 });
+  await page.locator('#exportFilename').press('Enter');
+  expect((await downloadPromise).suggestedFilename()).toBe('from-enter.html');
+  await expect(page.locator('#exportDialog')).toBeHidden();
+});
+
 test('serves the production Content Security Policy and fails on violations', async ({ page }) => {
   const response = await page.request.get('/');
   expect(response.headers()['content-security-policy']).toContain("default-src 'self'");
