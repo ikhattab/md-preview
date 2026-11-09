@@ -17,6 +17,7 @@ import { isOutlineShown, outlineMachine } from '../../lib/machines/outline.js';
 import { lintMachine } from '../../lib/machines/lint.js';
 import { diagramMachine, previewRenderMachine } from '../../lib/machines/preview.js';
 import { vendorLoaderMachine } from '../../lib/machines/vendor-loader.js';
+import { appUpdateMachine } from '../../lib/machines/app-update.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -322,4 +323,21 @@ test('diagram: renders once, and only a failed one is retried', () => {
 test('vendor loader: loads once, and tries again after a failure', () => {
   const { values } = run(vendorLoaderMachine, ['LOAD', 'LOAD', 'FAILED', 'LOAD', 'LOADED', 'LOAD']);
   assert.deepEqual(values, ['loading', 'loading', 'idle', 'loading', 'ready', 'ready']);
+});
+
+test('app update: a tab left behind by another tab is offered a reload', () => {
+  assert.deepEqual(
+    run(appUpdateMachine, [{ type: 'REGISTERED', controlled: false }, 'CONTROLLER_CHANGED']).values,
+    ['installing', 'current']
+  );
+  assert.deepEqual(
+    run(appUpdateMachine, [
+      { type: 'REGISTERED', controlled: true },
+      'UPDATE_READY',
+      'CONTROLLER_CHANGED',
+      'RELOAD',
+      'CONTROLLER_CHANGED',
+    ]).values,
+    ['current', 'updateReady', 'outdated', 'reloading', 'reloading']
+  );
 });
