@@ -538,6 +538,17 @@ test('exports standalone HTML with rendered content', async ({ page }) => {
   expect(await readAlertColors(page.locator('body'))).toEqual(previewAlertColors);
 });
 
+test('exports when Enter is pressed in the filename field', async ({ page }) => {
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await page.locator('#exportFilename').fill('from-enter');
+
+  const downloadPromise = page.waitForEvent('download', { timeout: 5000 });
+  await page.locator('#exportFilename').press('Enter');
+  expect((await downloadPromise).suggestedFilename()).toBe('from-enter.html');
+  await expect(page.locator('#exportDialog')).toBeHidden();
+});
+
 test('serves the production Content Security Policy and fails on violations', async ({ page }) => {
   const response = await page.request.get('/');
   expect(response.headers()['content-security-policy']).toContain("default-src 'self'");
@@ -788,6 +799,66 @@ test('prints a PDF export in the chosen theme and restores the live theme', asyn
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect.poll(() => readMermaidNodeFill(preview)).toBe(darkFill);
   await expect(page).toHaveTitle(appTitle);
+});
+
+test('cancels an export in progress and leaves the dialog ready for the next one', async ({
+  page,
+}) => {
+  const html = page.locator('html');
+  const dialog = page.locator('#exportDialog');
+  const downloadBtn = page.locator('#exportDownloadBtn');
+  const downloads = [];
+  page.on('download', (download) => downloads.push(download));
+
+  // Hold the export's fetch of the image, so the export stays in progress until released.
+  let releaseExportFetch;
+  const exportFetchHeld = new Promise((resolve) => {
+    page.route('https://images.example/**', async (route) => {
+      if (route.request().resourceType() === 'fetch' && !releaseExportFetch) {
+        await new Promise((release) => {
+          releaseExportFetch = release;
+          resolve();
+        });
+      }
+      await route.fulfill({ contentType: 'image/png', body: png });
+    });
+  });
+
+  await page.locator('#editor').fill('# Slow\n\n![slow](https://images.example/slow.png)\n');
+  await expect(page.locator('#preview img[alt="slow"]')).toBeVisible();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  await page.locator('#exportTheme').selectOption('dark');
+  await downloadBtn.click();
+  await exportFetchHeld;
+  await expect(downloadBtn).toHaveText('Exporting…');
+  await expect(downloadBtn).toBeDisabled();
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+
+  // Cancelling puts the live theme back right away, without waiting for the export.
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(html).toHaveAttribute('data-theme', 'light');
+
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportPdfBtn').click();
+  await expect(downloadBtn).toBeEnabled();
+  await expect(downloadBtn).toHaveText('Print / Save PDF');
+  await page.locator('#exportCancelBtn').click();
+  await expect(dialog).toBeHidden();
+
+  // Once released, the cancelled export ends without downloading or touching the dialog.
+  releaseExportFetch();
+  await page.locator('#exportMenuBtn').click();
+  await page.locator('#exportHtmlBtn').click();
+  const downloadPromise = page.waitForEvent('download');
+  await downloadBtn.click();
+  await downloadPromise;
+  await expect(page.locator('#mdToast')).toHaveText('Exported HTML');
+  await expect(dialog).toBeHidden();
+  expect(downloads).toHaveLength(1);
 });
 
 test('embeds remote images in HTML export and reports the ones it could not', async ({ page }) => {
