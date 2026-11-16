@@ -11,6 +11,44 @@ development, `window.__machines` holds every running machine.
 
 Arrows show `EVENT [guard]`. An arrow back to the same state changes only the context.
 
+## appUpdate
+
+Keeping the installed app up to date through the service worker. A new version waits until the reader chooses Reload, so a deploy never swaps code under someone mid-edit. If another tab switches to the new version first, this page runs the old one, whose files the new version no longer keeps offline, so it offers a reload too.
+
+- Defined in [`lib/machines/app-update.js`](../lib/machines/app-update.js)
+
+```mermaid
+stateDiagram-v2
+  [*] --> unregistered
+  unregistered --> current: REGISTERED [guarded]
+  unregistered --> installing: REGISTERED
+  installing --> current: CONTROLLER_CHANGED
+  current --> updateReady: UPDATE_READY
+  current --> outdated: CONTROLLER_CHANGED
+  updateReady --> reloading: RELOAD
+  updateReady --> outdated: CONTROLLER_CHANGED
+  outdated --> reloading: RELOAD
+  reloading --> reloading: CONTROLLER_CHANGED
+```
+
+## diagram
+
+One Mermaid diagram in the preview. A diagram is rendered once, however many preview updates happen meanwhile. One that may load remote images while blocking is on is replaced by a placeholder, and export retries one that failed.
+
+- Defined in [`lib/machines/preview.js`](../lib/machines/preview.js)
+- State shown on `.mermaid (each diagram)`
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> rendering: RENDER
+  pending --> blocked: BLOCK
+  rendering --> rendered: RENDERED
+  rendering --> failed: FAILED
+  rendering --> blocked: BLOCK
+  failed --> pending: RETRY
+```
+
 ## document
 
 What the editor holds: the untouched welcome guide, nothing, a draft, or an imported file, whose name exports reuse. Clearing the editor forgets the file's name. The untouched guide isn't saved, so the next visit shows the current one.
@@ -60,6 +98,25 @@ stateDiagram-v2
   file --> file: RESTORED [guarded]
 ```
 
+## dropOverlay
+
+Dragging a file over the window. The overlay says whether dropping will open it; drags that start inside the page, such as selected text, keep their usual behavior.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `#dropOverlay (data-state is ready or unsupported while a file is over the window)`
+- Context: `allowed`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> idle: DRAG_ENTER [blocked]
+  idle --> over: DRAG_ENTER
+  idle --> internal: INTERNAL_DRAG_START
+  internal --> idle: INTERNAL_DRAG_END
+  over --> idle: DRAG_LEAVE
+  over --> idle: DROP
+```
+
 ## editorPane
 
 The editor beside the preview on wide screens: open, or collapsed so the preview fills the window. Importing a file or pasting a whole document collapses it for reading, unless the reader reopened it after that before, which means they want to edit. Both the state and the width are saved.
@@ -102,6 +159,38 @@ stateDiagram-v2
   printing --> open: OPEN
 ```
 
+## exportMenu
+
+The Export menu of formats. Choosing one, Escape, or clicking or tabbing away closes it.
+
+- Defined in [`lib/machines/menus.js`](../lib/machines/menus.js)
+- State shown on `#exportMenu`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> open: TOGGLE
+  open --> closed: CLOSE
+  open --> closed: TOGGLE
+```
+
+## headerMenu
+
+The "More options" panel that holds the header controls on narrow screens. Toggles and the Export submenu keep it open; other actions, Escape, clicking or tabbing away, and resizing to a wide screen close it.
+
+- Defined in [`lib/machines/menus.js`](../lib/machines/menus.js)
+- State shown on `#headerMenu`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> open: TOGGLE
+  open --> closed: CLOSE
+  open --> closed: TOGGLE
+```
+
 ## import
 
 Opening a file from the Import button, a drop, or the operating system. Replacing the reader's own work asks first; the latest file wins when several arrive close together.
@@ -123,6 +212,37 @@ stateDiagram-v2
   confirming --> idle: CANCEL
 ```
 
+## lint
+
+Checking the markdown for common problems, when turned on (saved). Results arrive a moment after typing stops and show in the gutter and the lint panel.
+
+- Defined in [`lib/machines/lint.js`](../lib/machines/lint.js)
+- State shown on `#lintToggle`
+- Context: `warnings`
+
+```mermaid
+stateDiagram-v2
+  [*] --> off
+  off --> on: TOGGLE
+  on --> off: TOGGLE
+  on --> on: RESULTS
+```
+
+## mediaViewer
+
+The full screen view of a diagram or image. Closing it returns focus to the button or image that opened it.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `#mediaViewerDialog`
+- Context: `trigger`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  open --> closed: CLOSE
+```
+
 ## mobileView
 
 Which pane a narrow screen shows: the editor or the preview, chosen with the tabs and saved. Wide screens show both and ignore it.
@@ -135,6 +255,52 @@ stateDiagram-v2
   [*] --> editor
   editor --> preview: SHOW_PREVIEW
   preview --> editor: SHOW_EDITOR
+```
+
+## outline
+
+The list of the document's headings. It shows only while open and the document has headings (data-state is empty when it has none). On wide screens it is a side panel that stays open between visits; on narrow ones it covers the preview, opens only on request, and closes after jumping to a heading.
+
+- Defined in [`lib/machines/outline.js`](../lib/machines/outline.js)
+- State shown on `#outlinePanel`
+- Context: `hasHeadings`
+
+```mermaid
+stateDiagram-v2
+  [*] --> closed
+  closed --> open: OPEN
+  closed --> closed: HEADINGS
+  open --> closed: CLOSE
+  open --> open: HEADINGS
+```
+
+## previewRender
+
+Rendering the preview at most once per animation frame. A forced render, needed when something other than the markdown changed, isn't lost when it joins one already waiting.
+
+- Defined in [`lib/machines/preview.js`](../lib/machines/preview.js)
+- Context: `force`
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> scheduled: SCHEDULE
+  scheduled --> scheduled: SCHEDULE
+  scheduled --> idle: FRAME
+```
+
+## remoteImages
+
+Whether the preview blocks images from other sites until the reader chooses to load them (saved). Turning it on or off, or opening another document, forgets which images were let through.
+
+- Defined in [`lib/machines/remote-images.js`](../lib/machines/remote-images.js)
+- State shown on `#remoteImagesToggle`
+
+```mermaid
+stateDiagram-v2
+  [*] --> off
+  off --> blocking: TOGGLE
+  blocking --> off: TOGGLE
 ```
 
 ## resize
@@ -221,4 +387,35 @@ stateDiagram-v2
   held --> shown: DISMISS [guarded]
   held --> hidden: DISMISS [isCurrent]
   held --> held: DISMISS [isSuspended]
+```
+
+## tooltip
+
+The tooltip for whatever element with data-tooltip is hovered or focused. It hides when the pointer or focus leaves, and when its element is removed from the page, such as a lint warning icon the gutter redraws.
+
+- Defined in [`lib/machines/overlays.js`](../lib/machines/overlays.js)
+- State shown on `.gutter-tooltip`
+- Context: `anchor`
+
+```mermaid
+stateDiagram-v2
+  [*] --> hidden
+  hidden --> shown: SHOW
+  shown --> shown: SHOW
+  shown --> hidden: LEAVE [forAnchor]
+  shown --> hidden: ANCHOR_REMOVED
+```
+
+## vendorLoader
+
+Loading a heavy library the first time the preview needs it: highlight.js for code, KaTeX for math, Pele for diagrams. It counts as loaded only once all of it is, and it's tried again after a failure. In development these run as hljsLoader, katexLoader, and mermaidLoader.
+
+- Defined in [`lib/machines/vendor-loader.js`](../lib/machines/vendor-loader.js)
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> loading: LOAD
+  loading --> ready: LOADED
+  loading --> idle: FAILED
 ```

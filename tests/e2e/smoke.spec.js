@@ -1295,6 +1295,31 @@ test('scroll sync follows the editor to where it stops', async ({ page }) => {
     .toBeLessThan(2);
 });
 
+test('hides a tooltip whose element is removed', async ({ page }) => {
+  const editor = page.locator('#editor');
+  await page.locator('#lintToggle').click();
+  await editor.fill('# Title\n\nTrailing spaces \n');
+  const icon = page.locator('#lineGutter .line-error-icon').first();
+  await icon.hover();
+  await expect(page.locator('.gutter-tooltip')).toBeVisible();
+
+  // Fixing the warning redraws the gutter without the icon under the pointer.
+  await editor.evaluate((el) => {
+    el.value = '# Title\n\nNo trailing spaces\n';
+    el.dispatchEvent(new Event('input'));
+  });
+  await expect(icon).toHaveCount(0);
+  await expect(page.locator('.gutter-tooltip')).toBeHidden();
+});
+
+test('leaves focus where the reader clicks after closing the Export menu', async ({ page }) => {
+  await page.locator('#exportMenuBtn').click();
+  await expect(page.locator('#exportMenuPopover')).toBeVisible();
+  await page.locator('#editor').click();
+  await expect(page.locator('#exportMenuPopover')).toBeHidden();
+  await expect(page.locator('#editor')).toBeFocused();
+});
+
 test('replaces the welcome document without asking', async ({ browser }) => {
   const file = { name: 'notes.md', mimeType: 'text/markdown', buffer: Buffer.from('# Notes\n') };
 
@@ -1338,6 +1363,20 @@ test("doesn't save the untouched welcome guide, so a later visit gets the curren
   await editor.press('End');
   await editor.pressSequentially(' edited');
   await expect.poll(savedContent).toContain(' edited');
+  await page.context().close();
+});
+
+test('highlights code in the dark theme from the first load', async ({ browser }) => {
+  const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('link#hljs-theme-dark')).toHaveCount(1);
+  expect(
+    await page.evaluate(() => [
+      document.getElementById('hljs-theme-light').disabled,
+      document.getElementById('hljs-theme-dark').disabled,
+    ])
+  ).toEqual([true, false]);
   await page.context().close();
 });
 

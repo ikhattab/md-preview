@@ -4,6 +4,7 @@ import { join } from 'path';
 import { cloudflareHeaders } from './scripts/cloudflare-headers.js';
 import { prerenderWelcome } from './scripts/prerender-welcome.js';
 import { serviceWorker } from './scripts/service-worker.js';
+import { stripMachineDocs } from './scripts/strip-machine-docs.js';
 
 const STATIC_FILES = [
   '404.html',
@@ -49,6 +50,7 @@ export default defineConfig({
         }
       },
     },
+    stripMachineDocs(),
     prerenderWelcome(),
     cloudflareHeaders(),
     serviceWorker(),

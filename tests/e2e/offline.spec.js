@@ -110,6 +110,39 @@ test('offers a reload when a new version is ready, then switches over', async ({
     .toBeUndefined();
 });
 
+test('offers a reload in a tab left on the old version by another tab', async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(45_000);
+  await page.goto('/');
+  await waitForControl(page);
+  const other = await context.newPage();
+  await other.goto('/');
+  await waitForControl(other);
+
+  await page.evaluate(() => navigator.serviceWorker.register('/sw.js?next'));
+  const toast = page.locator('#mdToast');
+  const otherToast = other.locator('#mdToast');
+  await expect(toast).toContainText('Update available');
+  // Pointing at this tab's offer keeps it, while the other tab's times out.
+  await toast.hover();
+  await expect(otherToast).toContainText('Update available');
+  await expect(otherToast).toBeHidden({ timeout: 15_000 });
+
+  await Promise.all([
+    page.waitForEvent('load'),
+    toast.getByRole('button', { name: 'Reload' }).click(),
+  ]);
+  await expect(otherToast).toContainText('Updated in another tab');
+  await Promise.all([
+    other.waitForEvent('load'),
+    otherToast.getByRole('button', { name: 'Reload' }).click(),
+  ]);
+  await waitForControl(other);
+  expect(await controllerScript(other)).toMatch(/\/sw\.js\?next$/);
+});
+
 test('precaches what the app needs to start', async () => {
   const dist = new URL('../../dist/', import.meta.url);
   const worker = await readFile(new URL('sw.js', dist), 'utf8');

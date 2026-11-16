@@ -12,6 +12,12 @@ import {
   resizeMachine,
   scrollSyncMachine,
 } from '../../lib/machines/layout.js';
+import { dropOverlayMachine, tooltipMachine } from '../../lib/machines/overlays.js';
+import { isOutlineShown, outlineMachine } from '../../lib/machines/outline.js';
+import { lintMachine } from '../../lib/machines/lint.js';
+import { diagramMachine, previewRenderMachine } from '../../lib/machines/preview.js';
+import { vendorLoaderMachine } from '../../lib/machines/vendor-loader.js';
+import { appUpdateMachine } from '../../lib/machines/app-update.js';
 
 /** Sends `events` in order and returns the states the machine went through. */
 function run(definition, events, options) {
@@ -233,4 +239,105 @@ test('scroll sync: the leading pane ignores the echo from the other one until it
     'TOGGLE',
   ]);
   assert.deepEqual(values, ['off', 'idle', 'editor', 'editor', 'editor', 'idle', 'preview', 'off']);
+});
+
+test('drop overlay: ignores page drags and drags while a dialog is open', () => {
+  assert.deepEqual(
+    run(dropOverlayMachine, [
+      'INTERNAL_DRAG_START',
+      { type: 'DRAG_ENTER', allowed: true },
+      'INTERNAL_DRAG_END',
+      { type: 'DRAG_ENTER', allowed: true, blocked: true },
+      { type: 'DRAG_ENTER', allowed: false },
+      'DROP',
+    ]).values,
+    ['internal', 'internal', 'idle', 'idle', 'over', 'idle']
+  );
+});
+
+test('tooltip: leaving another element keeps it, and removal hides it', () => {
+  const a = { id: 'a' };
+  const b = { id: 'b' };
+  const { values } = run(tooltipMachine, [
+    { type: 'SHOW', anchor: a },
+    { type: 'SHOW', anchor: b },
+    { type: 'LEAVE', anchor: a },
+    'ANCHOR_REMOVED',
+  ]);
+  assert.deepEqual(values, ['shown', 'shown', 'shown', 'hidden']);
+});
+
+test('outline: shows only while open and the document has headings', () => {
+  const machine = createMachine(outlineMachine);
+  machine.send('OPEN');
+  assert.equal(isOutlineShown(machine.state), false);
+  machine.send({ type: 'HEADINGS', present: true });
+  assert.equal(isOutlineShown(machine.state), true);
+  machine.send('CLOSE');
+  assert.equal(isOutlineShown(machine.state), false);
+});
+
+test('lint: results only count while on, and turning off clears them', () => {
+  const warnings = [{ line: 1, message: 'MD041' }];
+  const machine = createMachine(lintMachine);
+  machine.send({ type: 'RESULTS', warnings });
+  assert.deepEqual(machine.context.warnings, []);
+  machine.send('TOGGLE');
+  machine.send({ type: 'RESULTS', warnings });
+  assert.deepEqual(machine.context.warnings, warnings);
+  machine.send('TOGGLE');
+  assert.deepEqual(machine.context.warnings, []);
+});
+
+test('preview render: a forced render joining a waiting one stays forced', () => {
+  const machine = createMachine(previewRenderMachine);
+  machine.send({ type: 'SCHEDULE', force: false });
+  machine.send({ type: 'SCHEDULE', force: true });
+  machine.send({ type: 'SCHEDULE', force: false });
+  assert.deepEqual(machine.state, { value: 'scheduled', context: { force: true } });
+  machine.send('FRAME');
+  assert.deepEqual(machine.state, { value: 'idle', context: { force: false } });
+});
+
+test('diagram: renders once, and only a failed one is retried', () => {
+  const { values } = run(diagramMachine, [
+    'RENDER',
+    'RENDER',
+    'FAILED',
+    'RETRY',
+    'RENDER',
+    'RENDERED',
+    'RETRY',
+  ]);
+  assert.deepEqual(values, [
+    'rendering',
+    'rendering',
+    'failed',
+    'pending',
+    'rendering',
+    'rendered',
+    'rendered',
+  ]);
+});
+
+test('vendor loader: loads once, and tries again after a failure', () => {
+  const { values } = run(vendorLoaderMachine, ['LOAD', 'LOAD', 'FAILED', 'LOAD', 'LOADED', 'LOAD']);
+  assert.deepEqual(values, ['loading', 'loading', 'idle', 'loading', 'ready', 'ready']);
+});
+
+test('app update: a tab left behind by another tab is offered a reload', () => {
+  assert.deepEqual(
+    run(appUpdateMachine, [{ type: 'REGISTERED', controlled: false }, 'CONTROLLER_CHANGED']).values,
+    ['installing', 'current']
+  );
+  assert.deepEqual(
+    run(appUpdateMachine, [
+      { type: 'REGISTERED', controlled: true },
+      'UPDATE_READY',
+      'CONTROLLER_CHANGED',
+      'RELOAD',
+      'CONTROLLER_CHANGED',
+    ]).values,
+    ['current', 'updateReady', 'outdated', 'reloading', 'reloading']
+  );
 });
