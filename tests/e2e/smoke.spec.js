@@ -1456,6 +1456,19 @@ test('shows an imported document for reading, until the editor is reopened', asy
   await expect(editorPane).not.toHaveClass(/collapsed/);
 });
 
+test("keeps the editor collapsed when undoing an import that didn't collapse it", async ({
+  page,
+}) => {
+  const editorPane = page.locator('#editorPane');
+
+  await importReplacing(page, 'first.md', '# First\n');
+  await expect(editorPane).toHaveClass(/collapsed/);
+  await importReplacing(page, 'second.md', '# Second\n');
+  await page.locator('#mdToast').getByRole('button', { name: 'Undo' }).click();
+  await expect(page.locator('#preview h1')).toHaveText('First');
+  await expect(editorPane).toHaveClass(/collapsed/);
+});
+
 function dragFile(page, { name, type, content = '' }) {
   return page.evaluateHandle(
     ({ name, type, content }) => {
