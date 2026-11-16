@@ -7,8 +7,6 @@ import './lib/fonts.js';
 import './styles.css';
 
 import { dom } from './lib/dom.js';
-import { STORAGE_KEYS } from './lib/constants.js';
-import { getStorageItem } from './lib/storage.js';
 import { bindPreviewLinkListeners, configureMarked, schedulePreviewUpdate } from './lib/preview.js';
 import { updateLineGutter, syncGutterScroll } from './lib/gutter.js';
 import { initTooltips } from './lib/tooltip.js';
@@ -20,7 +18,7 @@ import {
   runInitialLint,
   toggleLint,
 } from './lib/lint.js';
-import { loadTheme, setTheme, toggleTheme } from './lib/theme.js';
+import { loadTheme, toggleTheme } from './lib/theme.js';
 import {
   bindResizeListeners,
   handleViewportResize,
@@ -116,12 +114,6 @@ function setupEventListeners() {
   }
 
   bindResizeListeners();
-
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!getStorageItem(STORAGE_KEYS.THEME)) {
-      setTheme(e.matches ? 'dark' : 'light');
-    }
-  });
 
   if (scrollSyncToggle) {
     scrollSyncToggle.addEventListener('click', toggleScrollSync);
