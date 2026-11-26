@@ -18,12 +18,12 @@
     "docs:machines": "node scripts/state-machines.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.14.0",
-    "prettier": "^3.9.10",
-    "vite": "^8.3.7"
+    "prettier": "^3.10.1",
+    "vite": "^8.3.8"
   },
   "keywords": [
     "markdown",
